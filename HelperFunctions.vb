@@ -1,4 +1,11 @@
-﻿Module HelperFunctions
+﻿Imports System
+Imports System.Diagnostics
+Imports System.IO
+Imports System.Text
+Imports System.Text.RegularExpressions
+Module HelperFunctions
+
+
 
     Public Function CalculateRetailPrice(grandTotal As Decimal, profit As Decimal) As Decimal
         Dim price As Decimal = grandTotal + profit
@@ -239,4 +246,155 @@
         notes
     )
     End Sub
+    ' ================================================================
+    ' File: HelperFunctions.vb
+    ' Purpose:
+    '   Utility helpers for interacting with Windows Task Scheduler and
+    '   waiting for a file (DailySchema.json) to be created/updated.
+    '
+    ' Public Functions:
+    '   - RunScheduledTask(taskNameOrPath As String) As Boolean
+    '   - TaskExists(taskNameOrPath As String) As Boolean
+    '   - GetTaskLastRunTime(taskNameOrPath As String) As DateTime?
+    '   - WaitForFileChange(path As String, previousWriteTimeUtc As DateTime?, timeoutSeconds As Integer) As Boolean
+    '
+    ' Dependencies:
+    '   - schtasks.exe (built into Windows)
+    '   - No external NuGet packages required
+    ' ================================================================
+
+    ' ------------------------------------------------------------
+    ' Function: RunScheduledTask
+    ' Purpose : Start a scheduled task immediately using schtasks.exe
+    ' Params  : taskNameOrPath - exact task name or full path (\Folder\TaskName)
+    ' Returns : True if task started successfully, False otherwise
+    ' ------------------------------------------------------------
+    Public Function RunScheduledTask(taskNameOrPath As String) As Boolean
+        If String.IsNullOrWhiteSpace(taskNameOrPath) Then Throw New ArgumentException("Task name/path is required.", NameOf(taskNameOrPath))
+
+        Dim psi As New ProcessStartInfo() With {
+            .FileName = "schtasks.exe",
+            .Arguments = "/run /tn " & QuoteArg(taskNameOrPath),
+            .CreateNoWindow = True,
+            .UseShellExecute = False,
+            .RedirectStandardOutput = True,
+            .RedirectStandardError = True
+        }
+
+        Using p As Process = Process.Start(psi)
+            p.WaitForExit()
+            Return p.ExitCode = 0
+        End Using
+    End Function
+
+
+    ' ------------------------------------------------------------
+    ' Function: TaskExists
+    ' What it does:
+    '   Checks if a scheduled task exists using:
+    '     schtasks.exe /query /tn "<TaskName>"
+    ' Parameters:
+    '   taskName : The Task Scheduler "Task Name"
+    ' Returns:
+    '   Boolean  : True if the task is found (exit code 0)
+    ' ------------------------------------------------------------
+    Public Function TaskExists(taskNameOrPath As String) As Boolean
+        If String.IsNullOrWhiteSpace(taskNameOrPath) Then Return False
+
+        Dim psi As New ProcessStartInfo() With {
+            .FileName = "schtasks.exe",
+            .Arguments = "/query /tn " & QuoteArg(taskNameOrPath),
+            .CreateNoWindow = True,
+            .UseShellExecute = False,
+            .RedirectStandardOutput = True,
+            .RedirectStandardError = True
+        }
+
+        Using p As Process = Process.Start(psi)
+            p.WaitForExit()
+            Return p.ExitCode = 0
+        End Using
+    End Function
+
+    ' ------------------------------------------------------------
+    ' Function: GetTaskLastRunTime
+    ' What it does:
+    '   Queries verbose task info and attempts to parse "Last Run Time".
+    '   Uses:
+    '     schtasks.exe /query /tn "<TaskName>" /fo LIST /v
+    ' Parameters:
+    '   taskName : The Task Scheduler "Task Name"
+    ' Returns:
+    '   Nullable(Of DateTime) : Last run time if parse succeeds; otherwise Nothing
+    ' ------------------------------------------------------------
+    Public Function GetTaskLastRunTime(taskNameOrPath As String) As DateTime?
+        If String.IsNullOrWhiteSpace(taskNameOrPath) Then Return Nothing
+
+        Dim psi As New ProcessStartInfo() With {
+            .FileName = "schtasks.exe",
+            .Arguments = "/query /tn " & QuoteArg(taskNameOrPath) & " /fo LIST /v",
+            .CreateNoWindow = True,
+            .UseShellExecute = False,
+            .RedirectStandardOutput = True,
+            .RedirectStandardError = True,
+            .StandardOutputEncoding = Encoding.UTF8
+        }
+
+        Using p As Process = Process.Start(psi)
+            Dim output As String = p.StandardOutput.ReadToEnd()
+            p.WaitForExit()
+
+            If p.ExitCode <> 0 OrElse String.IsNullOrEmpty(output) Then Return Nothing
+
+            Dim m As Match = Regex.Match(output, "Last Run Time\s*:\s*(.+)", RegexOptions.IgnoreCase)
+            If m.Success Then
+                Dim raw As String = m.Groups(1).Value.Trim()
+                Dim dt As DateTime
+                If DateTime.TryParse(raw, dt) Then Return dt
+            End If
+
+            Return Nothing
+        End Using
+    End Function
+
+
+    ' ------------------------------------------------------------
+    ' Function: WaitForFileChange
+    ' Purpose : Wait until a file is created or modified
+    ' Params  : path - file path to watch
+    '           previousWriteTimeUtc - last known write time (Nothing if unknown)
+    '           timeoutSeconds - how long to wait
+    ' Returns : True if file updated before timeout, False otherwise
+    ' ------------------------------------------------------------
+    Public Function WaitForFileChange(path As String, previousWriteTimeUtc As DateTime?, timeoutSeconds As Integer) As Boolean
+        Dim stopAt As DateTime = DateTime.UtcNow.AddSeconds(Math.Max(1, timeoutSeconds))
+
+        Do
+            If File.Exists(path) Then
+                Dim current As DateTime = File.GetLastWriteTimeUtc(path)
+                If Not previousWriteTimeUtc.HasValue OrElse current > previousWriteTimeUtc.Value Then
+                    Return True
+                End If
+            End If
+
+            System.Threading.Thread.Sleep(500) ' poll every 0.5s
+        Loop While DateTime.UtcNow < stopAt
+
+        Return False
+    End Function
+    ' ------------------------------------------------------------
+    ' Function: QuoteArg
+    ' What it does:
+    '   Safely quotes an argument for the command line.
+    ' Parameters:
+    '   s : raw string to quote
+    ' Returns:
+    '   String : quoted argument (e.g., "My Task Name")
+    ' ------------------------------------------------------------
+    Private Function QuoteArg(s As String) As String
+        If s.Contains("""") Then Return s
+        Return """" & s & """"
+    End Function
+
 End Module
+

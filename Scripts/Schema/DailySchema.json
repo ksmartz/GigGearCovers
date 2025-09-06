@@ -1,6 +1,6 @@
 ﻿{
     "database":  "GigGearCoversDb",
-    "generatedOn":  "2025-09-06T01:50:10",
+    "generatedOn":  "2025-09-06T14:46:53",
     "tables":  [
                    {
                        "name":  "AmpHandleLocation",
@@ -2742,6 +2742,143 @@
                                            },
                                            {
                                                "ColumnName":  "AddedPrice",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "ModelEquipmentTypeImage",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "PK_imageId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_equipmentTypeId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_marketplaceNameId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "imageUrl",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  2000,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "imageType",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  200,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "altText",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  1020,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "position",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "isActive",
+                                           "DataType":  "bit",
+                                           "MaxLength":  1,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "dateAdded",
+                                           "DataType":  "datetime",
+                                           "MaxLength":  8,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "wooImageId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "PK_imageId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_equipmentTypeId",
+                                               "ReferencedTable":  "ModelEquipmentTypes",
+                                               "ReferencedColumn":  "PK_equipmentTypeId"
+                                           },
+                                           {
+                                               "ColumnName":  "FK_marketplaceNameId",
+                                               "ReferencedTable":  "MarketplaceName",
+                                               "ReferencedColumn":  "PK_marketplaceNameId"
+                                           },
+                                           {
+                                               "ColumnName":  "imageUrl",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "imageType",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "altText",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "position",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "isActive",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "dateAdded",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "wooImageId",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            }

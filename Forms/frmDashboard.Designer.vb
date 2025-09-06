@@ -25,6 +25,7 @@ Partial Class frmDashboard
         Me.btnMaterialsDataEntry = New System.Windows.Forms.Button()
         Me.btnAddSupplier = New System.Windows.Forms.Button()
         Me.btnAddModels = New System.Windows.Forms.Button()
+        Me.btnRefreshSchema = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'btnMaterialsDataEntry
@@ -54,11 +55,21 @@ Partial Class frmDashboard
         Me.btnAddModels.Text = "Add Model Information"
         Me.btnAddModels.UseVisualStyleBackColor = True
         '
+        'btnRefreshSchema
+        '
+        Me.btnRefreshSchema.Location = New System.Drawing.Point(91, 497)
+        Me.btnRefreshSchema.Name = "btnRefreshSchema"
+        Me.btnRefreshSchema.Size = New System.Drawing.Size(275, 86)
+        Me.btnRefreshSchema.TabIndex = 3
+        Me.btnRefreshSchema.Text = "Refresh Schema"
+        Me.btnRefreshSchema.UseVisualStyleBackColor = True
+        '
         'frmDashboard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(1429, 803)
+        Me.Controls.Add(Me.btnRefreshSchema)
         Me.Controls.Add(Me.btnAddModels)
         Me.Controls.Add(Me.btnAddSupplier)
         Me.Controls.Add(Me.btnMaterialsDataEntry)
@@ -71,4 +82,5 @@ Partial Class frmDashboard
     Friend WithEvents btnMaterialsDataEntry As Windows.Forms.Button
     Friend WithEvents btnAddSupplier As Windows.Forms.Button
     Friend WithEvents btnAddModels As Windows.Forms.Button
+    Friend WithEvents btnRefreshSchema As Windows.Forms.Button
 End Class
