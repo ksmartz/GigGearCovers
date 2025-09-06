@@ -68,42 +68,196 @@ Module WooCommerceApi
         Return Await UpdateProductAsync(product, wooProductId)
     End Function
 
-    ' Example function to update image IDs in the database for marketplace ID 6
-    Public Sub UpdateWooImageIds(productResponseJson As String)
-        Dim productResponse = JObject.Parse(productResponseJson)
-        Dim images = productResponse("images")
-        If images Is Nothing OrElse Not TypeOf images Is JArray Then Return
+    ' =====================================================================
+    ' Sub: UpdateWooImageIds
+    ' Date: 2025-09-06
+    ' Purpose:
+    '   Persist WooCommerce image IDs for a given model/equipment type.
+    '   Fixes the SQL error "Cannot insert NULL into column 'FK_equipmentTypeId'..."
+    '   by resolving a valid equipmentTypeId before insert/update.
+    ' Parameters:
+    '   conn             : open SqlConnection
+    '   tx               : active SqlTransaction (optional but recommended)
+    '   modelId          : your internal model ID
+    '   productResponseJson : raw JSON from Woo product create/update/get
+    '   productTypeName  : fallback lookup key for EquipmentType.Name if Model.FK_equipmentTypeId is NULL
+    ' =====================================================================
+    ' =============================================================================================
+    ' OVERLOAD 2 (with transaction): original signature
+    ' =============================================================================================
+    Public  Sub UpdateWooImageIds(conn As SqlConnection,
+                                        tx As SqlTransaction,
+                                        modelId As Integer,
+                                        productResponseJson As String,
+                                        productTypeName As String)
 
-        Using conn As SqlConnection = DbConnectionManager.GetConnection()
-            conn.Open()
-            For Each img In images
-                Dim wooImageId As Integer = img("id")
-                Dim imageUrl As String = img("src").ToString()
+        ' Parse the image id from Woo response
+        Dim wooImageId As Long = ParsePrimaryWooImageId(productResponseJson)
 
-                ' Update or insert the image record for marketplace ID 6
-                Dim cmd As New SqlCommand("
-                UPDATE ProductImages
-                SET WooImageId = @WooImageId
-                WHERE MarketplaceId = 6 AND ImageUrl = @ImageUrl
+        ' Resolve equipment type id (prevents NULL FK_equipmentTypeId errors)
+        Dim equipmentTypeId As Integer? = ResolveEquipmentTypeId(conn, tx, modelId, productTypeName)
+        If Not equipmentTypeId.HasValue Then
+            Throw New InvalidOperationException(
+                $"Cannot save Woo image because EquipmentTypeId is unknown. modelId={modelId}, productType='{productTypeName}'.")
+        End If
 
-                IF @@ROWCOUNT = 0
-                INSERT INTO ProductImages (MarketplaceId, WooImageId, ImageUrl)
-                VALUES (6, @WooImageId, @ImageUrl)
-            ", conn)
-                cmd.Parameters.AddWithValue("@WooImageId", wooImageId)
-                cmd.Parameters.AddWithValue("@ImageUrl", imageUrl)
-                cmd.ExecuteNonQuery()
-            Next
+        ' UPSERT row in ModelEquipmentTypeImage
+        Using cmd As SqlCommand = NewCmd("
+            IF EXISTS (SELECT 1 FROM dbo.ModelEquipmentTypeImage WITH (UPDLOCK, HOLDLOCK)
+                       WHERE FK_modelId=@modelId AND FK_equipmentTypeId=@equipmentTypeId)
+            BEGIN
+                UPDATE dbo.ModelEquipmentTypeImage
+                   SET WooImageId = @wooImageId,
+                       UpdatedAt  = SYSUTCDATETIME()
+                 WHERE FK_modelId=@modelId AND FK_equipmentTypeId=@equipmentTypeId;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.ModelEquipmentTypeImage
+                    (FK_modelId, FK_equipmentTypeId, WooImageId, CreatedAt)
+                VALUES
+                    (@modelId, @equipmentTypeId, @wooImageId, SYSUTCDATETIME());
+            END
+        ", conn, tx)
+            cmd.Parameters.Add("@modelId", SqlDbType.Int).Value = modelId
+            cmd.Parameters.Add("@equipmentTypeId", SqlDbType.Int).Value = equipmentTypeId.Value
+            cmd.Parameters.Add("@wooImageId", SqlDbType.BigInt).Value = wooImageId
+            cmd.ExecuteNonQuery()
         End Using
     End Sub
 
-    ' Parses the WooCommerce product ID from the API response JSON
-    Public Function ParseWooProductIdFromResult(resultJson As String) As Integer
-        Dim obj = JObject.Parse(resultJson)
-        If obj("id") IsNot Nothing Then
-            Return CInt(obj("id"))
+    ' =====================================================================
+    ' Function: ParsePrimaryWooImageId
+    ' Date: 2025-09-06
+    ' Purpose:
+    '   Extract the primary image ID from a WooCommerce product JSON payload.
+    '   Looks for product.images[0].id. Returns 0 if not found.
+    ' =====================================================================
+    Public Function ParsePrimaryWooImageId(json As String) As Long
+        If String.IsNullOrWhiteSpace(json) Then Return 0
+
+        Dim token As JToken = Nothing
+        Try
+            token = JToken.Parse(json)
+        Catch
+            Return 0
+        End Try
+
+        Dim images As JToken = Nothing
+
+        If token.Type = JTokenType.Object Then
+            images = token("images")
+        ElseIf token.Type = JTokenType.Array Then
+            ' If an array of products is returned, check first element
+            Dim first = token.First
+            If first IsNot Nothing Then images = first("images")
         End If
-        Throw New Exception("Could not parse WooCommerce product ID from response.")
+
+        If images IsNot Nothing AndAlso images.Type = JTokenType.Array AndAlso images.HasValues Then
+            Dim firstImg = images.First
+            If firstImg IsNot Nothing Then
+                Dim idTok = firstImg("id")
+                If idTok IsNot Nothing AndAlso idTok.Type <> JTokenType.Null Then
+                    Dim val As Long
+                    If Long.TryParse(idTok.ToString(), val) Then Return val
+                End If
+            End If
+        End If
+
+        Return 0
     End Function
+
+    ' =====================================================================
+    ' Function: ParseWooProductIdFromResult
+    ' Date: 2025-09-06
+    ' Purpose:
+    '   Extract the WooCommerce product "id" from a JSON response payload.
+    '   Works for typical Woo endpoints (create/update/get single product).
+    ' Returns:
+    '   Product ID as Long. Returns 0 if not found or if JSON is empty.
+    ' =====================================================================
+    Public Function ParseWooProductIdFromResult(json As String) As Long
+        If String.IsNullOrWhiteSpace(json) Then Return 0
+
+        Dim token As JToken = Nothing
+        Try
+            token = JToken.Parse(json)
+        Catch
+            ' Not valid JSON
+            Return 0
+        End Try
+
+        ' Response can be an object with "id" or an array (rare). Prefer object->id.
+        If token.Type = JTokenType.Object Then
+            Dim idTok = token("id")
+            If idTok IsNot Nothing AndAlso idTok.Type <> JTokenType.Null Then
+                Dim val As Long
+                If Long.TryParse(idTok.ToString(), val) Then Return val
+            End If
+        ElseIf token.Type = JTokenType.Array Then
+            ' e.g., some bulk endpoints might return an array of products
+            Dim first = token.First
+            If first IsNot Nothing Then
+                Dim idTok = first("id")
+                If idTok IsNot Nothing AndAlso idTok.Type <> JTokenType.Null Then
+                    Dim val As Long
+                    If Long.TryParse(idTok.ToString(), val) Then Return val
+                End If
+            End If
+        End If
+
+        Return 0
+    End Function
+    ' =====================================================================
+    ' Helper: ResolveEquipmentTypeId
+    ' Date: 2025-09-06
+    ' Purpose:
+    '   Determine EquipmentTypeId for a model.
+    '   1) Try Model.FK_equipmentTypeId
+    '   2) Try lookup by EquipmentType.Name = productTypeName
+    ' Returns:
+    '   Integer? (Nothing if not found)
+    ' =====================================================================
+    Private Function ResolveEquipmentTypeId(
+        ByVal conn As SqlConnection,
+        ByVal tx As SqlTransaction,
+        ByVal modelId As Integer,
+        ByVal productTypeName As String
+    ) As Integer?
+
+        ' 1) From Model row
+        Using cmd As New SqlCommand("
+            SELECT TOP(1) FK_equipmentTypeId
+            FROM dbo.Model
+            WHERE PK_modelId = @modelId
+        ", conn, tx)
+            cmd.Parameters.Add("@modelId", SqlDbType.Int).Value = modelId
+            Dim obj = cmd.ExecuteScalar()
+            If obj IsNot Nothing AndAlso obj IsNot DBNull.Value Then
+                Dim id As Integer = Convert.ToInt32(obj)
+                If id > 0 Then Return id
+            End If
+        End Using
+
+        ' 2) From EquipmentType.Name
+        If Not String.IsNullOrWhiteSpace(productTypeName) Then
+            Using cmd As New SqlCommand("
+                SELECT TOP(1) PK_equipmentTypeId
+                FROM dbo.EquipmentType
+                WHERE Name = @name
+            ", conn, tx)
+                cmd.Parameters.Add("@name", SqlDbType.NVarChar, 100).Value = productTypeName.Trim()
+                Dim obj = cmd.ExecuteScalar()
+                If obj IsNot Nothing AndAlso obj IsNot DBNull.Value Then
+                    Dim id As Integer = Convert.ToInt32(obj)
+                    If id > 0 Then Return id
+                End If
+            End Using
+        End If
+
+        Return Nothing
+    End Function
+
+
 End Module
 

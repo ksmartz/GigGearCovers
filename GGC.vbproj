@@ -136,6 +136,7 @@
     <Compile Include="Forms\frmSuppliers.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="GitHubLinkHelpers.vb" />
     <Compile Include="HelperFunctions.vb" />
     <Compile Include="ModelCostUpdateResults.vb" />
     <Compile Include="ModelDesignFeatures.vb" />

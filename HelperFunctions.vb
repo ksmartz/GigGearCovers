@@ -396,5 +396,137 @@ Module HelperFunctions
         Return """" & s & """"
     End Function
 
+
+
+
+
+
+
+
+
+
+
+    ' ================================================================
+    ' File/Module: HelperFunctions.vb
+    ' Purpose   : Utility helpers for building GitHub file links from a
+    '             local repository path and displaying them in the UI.
+    '             Creates links like:
+    '             https://github.com/{owner}/{repo}/blob/{branch}/{path}
+    ' Dependencies:
+    '   - No external NuGet packages required
+    ' Notes:
+    '   - Excludes common build/IDE folders (.git, .vs, bin, obj) by default
+    '   - Uses Uri.EscapeDataString to safely encode URL path segments
+    ' ================================================================
+
+    ' ------------------------------------------------------------
+    ' Function: BuildGitHubLinks
+    ' Purpose : Enumerate files under repoRoot and return (LocalPath, Url)
+    ' Params  : repoRoot   - local repository root containing GGC.sln
+    '           owner      - GitHub account/organization (e.g., "ksmartz")
+    '           repo       - GitHub repo name (e.g., "GigGearCovers")
+    '           branch     - branch name ("main" or "master")
+    '           includeExt - list of file extensions to include (".vb", ".resx", ".sln", ".vbproj", etc.)
+    '           extraExcl  - additional relative folders to exclude (optional)
+    ' Returns : List(Of Tuple(Of String, String)) -> (localPath, githubUrl)
+    ' Depends : None
+    ' ------------------------------------------------------------
+    Public Function BuildGitHubLinks(repoRoot As String,
+                                     owner As String,
+                                     repo As String,
+                                     branch As String,
+                                     includeExt As IEnumerable(Of String),
+                                     Optional extraExcl As IEnumerable(Of String) = Nothing) As List(Of Tuple(Of String, String))
+
+        If String.IsNullOrWhiteSpace(repoRoot) OrElse Not Directory.Exists(repoRoot) Then
+            Throw New DirectoryNotFoundException("Repository root not found: " & repoRoot)
+        End If
+
+        Dim exts As HashSet(Of String) = New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        For Each e In includeExt
+            Dim norm = If(e.StartsWith("."c), e, "." & e)
+            exts.Add(norm)
+        Next
+
+        Dim defaultExclude As String() = {".git", ".vs", "bin", "obj"}
+        Dim exclude As HashSet(Of String) = New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        For Each d In defaultExclude
+            exclude.Add(d.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+        Next
+        If extraExcl IsNot Nothing Then
+            For Each d In extraExcl
+                exclude.Add(d.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+            Next
+        End If
+
+        Dim results As New List(Of Tuple(Of String, String))()
+
+        ' Enumerate all files and filter by extension & exclude dirs
+        Dim allFiles = Directory.EnumerateFiles(repoRoot, "*.*", SearchOption.AllDirectories)
+
+        For Each full In allFiles
+            Dim rel As String = GetRelativePath(repoRoot, full) ' e.g., "Forms\MyForm.vb"
+
+            ' Skip excluded folders if the relative path starts with them
+            Dim skip As Boolean = False
+            For Each ex In exclude
+                If rel.StartsWith(ex & Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) OrElse
+                   String.Equals(rel, ex, StringComparison.OrdinalIgnoreCase) Then
+                    skip = True
+                    Exit For
+                End If
+            Next
+            If skip Then Continue For
+
+            ' Filter by extension
+            Dim ext As String = Path.GetExtension(full)
+            If Not exts.Contains(ext) Then Continue For
+
+            ' Build GitHub URL
+            Dim ghUrl As String = BuildGitHubBlobUrl(owner, repo, branch, rel)
+
+            results.Add(Tuple.Create(rel, ghUrl))
+        Next
+
+        ' Sort for convenience (by relative path)
+        results.Sort(Function(a, b) StringComparer.OrdinalIgnoreCase.Compare(a.Item1, b.Item1))
+        Return results
+    End Function
+
+    ' ------------------------------------------------------------
+    ' Function: BuildGitHubBlobUrl
+    ' Purpose : Create a GitHub blob URL for a relative path
+    ' Params  : owner/repo/branch - GitHub coordinates
+    '           relativePath      - Windows-style relative path (uses \)
+    ' Returns : Full URL string
+    ' ------------------------------------------------------------
+    Public Function BuildGitHubBlobUrl(owner As String, repo As String, branch As String, relativePath As String) As String
+        ' Convert to URL path with forward slashes and encode each segment
+        Dim parts = relativePath.Split(New Char() {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar}, StringSplitOptions.RemoveEmptyEntries)
+        Dim encodedSegments As New List(Of String)
+        For Each seg In parts
+            encodedSegments.Add(Uri.EscapeDataString(seg))
+        Next
+        Dim encodedPath As String = String.Join("/", encodedSegments)
+        Return $"https://github.com/{owner}/{repo}/blob/{Uri.EscapeDataString(branch)}/{encodedPath}"
+    End Function
+
+    ' ------------------------------------------------------------
+    ' Function: GetRelativePath
+    ' Purpose : Return a Windows relative path from baseDir to fullPath
+    ' ------------------------------------------------------------
+    Public Function GetRelativePath(baseDir As String, fullPath As String) As String
+        Dim baseUri As New Uri(EnsureTrailingSlash(New Uri(Path.GetFullPath(baseDir)).ToString()))
+        Dim fileUri As New Uri(Path.GetFullPath(fullPath))
+        Dim relUri As Uri = baseUri.MakeRelativeUri(fileUri)
+        Dim rel As String = Uri.UnescapeDataString(relUri.ToString()).Replace("/"c, Path.DirectorySeparatorChar)
+        Return rel
+    End Function
+
+    Private Function EnsureTrailingSlash(s As String) As String
+        If s.EndsWith("/") Then Return s
+        Return s & "/"
+    End Function
+
 End Module
 
