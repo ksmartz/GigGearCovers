@@ -1,5 +1,5 @@
 # Copilot Repo Instructions (VB.NET — Visual Studio)
-_Last updated: <keep this line and update when you change rules>_
+_Last updated: 2025-09-06_
 
 These instructions guide GitHub Copilot **Chat** when working in this repository (Visual Studio). They define how answers and code should be produced, with a strong bias toward **ready-to-compile VB.NET**.
 
@@ -21,11 +21,22 @@ When Copilot Chat provides VB.NET code for this repo, it must follow **all** of 
    - If the code is a `Sub` or `Function`, **return the entire Sub/Function** in a single block, **not snippets**.
 
 2) **Update/Repair Workflow**
-   - If fixing code, present **(a)** the *incorrect snippet*, **(b)** the *corrected snippet*, then **(c)** the **complete, fully updated Sub/Function**.
+   - If fixing code, present:
+     - **(a)** the *incorrect snippet*,
+     - **(b)** the *corrected snippet*,
+     - **(c)** the **complete, fully updated Sub/Function**.
+   - **Always include the filename and line number range where the incorrect snippet comes from.**
+   - **When giving the complete updated Sub/Function, highlight the changed lines inside the code block.**
+     - Use inline VB.NET comments to mark changes:
+       ```vbnet
+       ' >>> changed
+       ' <<< end changed
+       ```
+     - Surround every changed section with these markers so it’s obvious what was modified.
    - Prepend a short **header comment** above the Sub/Function including:
      - Purpose
      - Dependencies (`Imports`, NuGet packages)
-     - **Current date** (use today’s date)
+     - **Current date**
    - Add **clear inline comments** explaining what each section does.
 
 3) **Sample Usage**
@@ -56,16 +67,9 @@ When Copilot Chat provides VB.NET code for this repo, it must follow **all** of 
 
 ---
 
-## Repository Context & Preferences
-- Assume most deliverables are **tools/utilities** that will be **pasted directly** into a project and run.
-- If multiple alternatives exist, prefer the approach that is **simplest to compile** in a clean Visual Studio install.
-- If an external package is required, **list the exact NuGet package name** and add a short install note.
-
----
-
 ## Example Answer Pattern (Template)
 > Use this **structure** whenever fixing or updating a Sub/Function.
 
-**Incorrect snippet**
+**Incorrect snippet (from `OrderService.vb`, lines 85–92)**
 ```vbnet
-' (Show the minimal faulty code that was provided or assumed)
+' (Show the minimal faulty code)

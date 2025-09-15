@@ -1,6 +1,6 @@
 ﻿{
     "database":  "GigGearCoversDb",
-    "generatedOn":  "2025-09-06T16:36:34",
+    "generatedOn":  "2025-09-12T22:58:01",
     "tables":  [
                    {
                        "name":  "AmpHandleLocation",
@@ -63,6 +63,78 @@
                                            },
                                            {
                                                "ColumnName":  "AngleTypeName",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "Color",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "PK_colorId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ColorName",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  200,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ColorSlug",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  382,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Hex",
+                                           "DataType":  "char",
+                                           "MaxLength":  7,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooTermId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "PK_colorId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ColorName",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ColorSlug",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Hex",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooTermId",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            }
@@ -1004,6 +1076,14 @@
                                            "IsNullable":  false,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooVariationID",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
                                        }
                                    ],
                        "foreignKeys":  [
@@ -1024,6 +1104,11 @@
                                            },
                                            {
                                                "ColumnName":  "FK_FabricTypeNameId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooVariationID",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            }
@@ -2751,7 +2836,7 @@
                        "name":  "ModelEquipmentTypeImage",
                        "columns":  [
                                        {
-                                           "ColumnName":  "PK_imageId",
+                                           "ColumnName":  "PK_modelEquipmentTypeImageId",
                                            "DataType":  "int",
                                            "MaxLength":  4,
                                            "IsNullable":  false,
@@ -2802,7 +2887,7 @@
                                            "ColumnName":  "position",
                                            "DataType":  "int",
                                            "MaxLength":  4,
-                                           "IsNullable":  true,
+                                           "IsNullable":  false,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
                                        },
@@ -2823,7 +2908,55 @@
                                            "ComputedDefinition":  null
                                        },
                                        {
-                                           "ColumnName":  "wooImageId",
+                                           "ColumnName":  "notes",
+                                           "DataType":  "nchar",
+                                           "MaxLength":  200,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ImageRole",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  64,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "IsVariation",
+                                           "DataType":  "bit",
+                                           "MaxLength":  1,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "IsParentGallery",
+                                           "DataType":  "bit",
+                                           "MaxLength":  1,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooMediaId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_FabricTypeNameId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_ColorNameId",
                                            "DataType":  "int",
                                            "MaxLength":  4,
                                            "IsNullable":  true,
@@ -2833,7 +2966,7 @@
                                    ],
                        "foreignKeys":  [
                                            {
-                                               "ColumnName":  "PK_imageId",
+                                               "ColumnName":  "PK_modelEquipmentTypeImageId",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            },
@@ -2878,7 +3011,37 @@
                                                "ReferencedColumn":  null
                                            },
                                            {
-                                               "ColumnName":  "wooImageId",
+                                               "ColumnName":  "notes",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ImageRole",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "IsVariation",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "IsParentGallery",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooMediaId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_FabricTypeNameId",
+                                               "ReferencedTable":  "FabricTypeName",
+                                               "ReferencedColumn":  "PK_FabricTypeNameId"
+                                           },
+                                           {
+                                               "ColumnName":  "FK_ColorNameId",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            }
@@ -5195,6 +5358,815 @@
                                        ]
                    },
                    {
+                       "name":  "MpWooCategory",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "WooCategoryId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Name",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Slug",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ParentWooId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Scope",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  64,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_SeriesId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_EquipmentTypeId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateEnsured",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "WooCategoryId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Name",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Slug",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ParentWooId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Scope",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_SeriesId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_EquipmentTypeId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateEnsured",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "MpWooColorTermMap",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "FK_ColorNameId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooTermId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Name",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Slug",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateEnsured",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "FK_ColorNameId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooTermId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Name",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Slug",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateEnsured",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "MpWooFabricTermMap",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "FK_FabricTypeNameId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooTermId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Name",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Slug",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateEnsured",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "FK_FabricTypeNameId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooTermId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Name",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Slug",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateEnsured",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "MpWooProduct",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "PK_MpWooProduct",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_ModelId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooProductId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ParentSKU",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  128,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "CategoryWooId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Status",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  64,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "RemoteSlug",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Permalink",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  1000,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "PayloadHash",
+                                           "DataType":  "binary",
+                                           "MaxLength":  32,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateCreated",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateModified",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "PK_MpWooProduct",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_ModelId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooProductId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ParentSKU",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "CategoryWooId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Status",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "RemoteSlug",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Permalink",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "PayloadHash",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateCreated",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateModified",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "MpWooSyncLog",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "PK_MpWooSyncLog",
+                                           "DataType":  "bigint",
+                                           "MaxLength":  8,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "EntityType",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  60,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LocalKey",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  256,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Action",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  48,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Status",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  32,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Message",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  2000,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "PayloadSent",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  -1,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateLogged",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Operation",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  100,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "RefSKU",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  128,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "RefWooId",
+                                           "DataType":  "bigint",
+                                           "MaxLength":  8,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Success",
+                                           "DataType":  "bit",
+                                           "MaxLength":  1,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "HttpStatus",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "RequestJson",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  -1,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ResponseJson",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  -1,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Notes",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  8000,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "CreatedAtUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  7,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "PK_MpWooSyncLog",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "EntityType",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LocalKey",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Action",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Status",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Message",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "PayloadSent",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateLogged",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Operation",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "RefSKU",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "RefWooId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Success",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "HttpStatus",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "RequestJson",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ResponseJson",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Notes",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "CreatedAtUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "MpWooVariation",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "PK_MpWooVariation",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_ModelId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_FabricTypeNameId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_ColorNameId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooVariationId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "VariationSKU",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  256,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Enabled",
+                                           "DataType":  "bit",
+                                           "MaxLength":  1,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Price",
+                                           "DataType":  "decimal",
+                                           "MaxLength":  9,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "SalePrice",
+                                           "DataType":  "decimal",
+                                           "MaxLength":  9,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "PayloadHash",
+                                           "DataType":  "binary",
+                                           "MaxLength":  32,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateCreated",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "DateModified",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "PK_MpWooVariation",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_ModelId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_FabricTypeNameId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_ColorNameId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooVariationId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "VariationSKU",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Enabled",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Price",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "SalePrice",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "PayloadHash",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateCreated",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "DateModified",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           }
+                                       ]
+                   },
+                   {
                        "name":  "ProductImage",
                        "columns":  [
                                        {
@@ -5674,6 +6646,39 @@
                                                "ColumnName":  "FK_JoinProductColorFabricTypeId",
                                                "ReferencedTable":  "JoinProductColorFabricType",
                                                "ReferencedColumn":  "PK_JoinProductColorFabricTypeId"
+                                           }
+                                       ]
+                   },
+                   {
+                       "name":  "WooCategoryMap",
+                       "columns":  [
+                                       {
+                                           "ColumnName":  "Name",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooCategoryId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       }
+                                   ],
+                       "foreignKeys":  [
+                                           {
+                                               "ColumnName":  "Name",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooCategoryId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
                                            }
                                        ]
                    }

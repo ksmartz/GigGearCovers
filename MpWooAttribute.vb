@@ -3,4 +3,7 @@
     Public Property variation As Boolean ' REQUIRED for parent product attribute (True if used for variations)
     Public Property visible As Boolean ' REQUIRED for parent product attribute (True to show on product page)
     Public Property options As List(Of String) ' REQUIRED for parent product attribute (List of possible values, e.g., {"Red", "Blue"})
+    ' >>> changed
+    Public Property [Option] As String ' Used for single-value attribute on variations
+    ' <<< end changed
 End Class

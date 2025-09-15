@@ -1,4 +1,8 @@
-﻿Imports System
+﻿Option Strict On
+Option Explicit On
+Imports System.Data
+
+Imports System
 Imports System.Diagnostics
 Imports System.IO
 Imports System.Text
@@ -28,11 +32,10 @@ Module HelperFunctions
     weight_PremiumSyntheticLeather As Decimal?,
     weight_PremiumSyntheticLeather_Padded As Decimal?
 )
-        Dim db As New DbConnectionManager()
-
-        Dim rowCW = db.GetActiveFabricBrandProductName("Choice Waterproof")
-        Dim rowSL = db.GetActiveFabricBrandProductName("Premium Synthetic Leather")
-        Dim rowPad = db.GetActiveFabricBrandProductName("Padding")
+        ' Call Shared (static) methods directly on the class:
+        Dim rowCW As DataRow = DbConnectionManager.GetActiveFabricBrandProductName("Choice Waterproof")
+        Dim rowSL As DataRow = DbConnectionManager.GetActiveFabricBrandProductName("Premium Synthetic Leather")
+        Dim rowPad As DataRow = DbConnectionManager.GetActiveFabricBrandProductName("Padding")
 
         Dim weightCW As Decimal? = Nothing
         Dim weightSL As Decimal? = Nothing
@@ -40,19 +43,30 @@ Module HelperFunctions
         Dim weightCWPad As Decimal? = Nothing
         Dim weightSLPad As Decimal? = Nothing
 
-        If rowCW IsNot Nothing Then
+        If rowCW IsNot Nothing AndAlso
+       Not IsDBNull(rowCW("WeightPerLinearYard")) AndAlso
+       Not IsDBNull(rowCW("FabricRollWidth")) Then
+
             weightCW = CalculateFabricWeightInOunces(
             Convert.ToDecimal(rowCW("WeightPerLinearYard")),
             Convert.ToDecimal(rowCW("FabricRollWidth")),
             totalFabricSquareInches)
         End If
-        If rowSL IsNot Nothing Then
+
+        If rowSL IsNot Nothing AndAlso
+       Not IsDBNull(rowSL("WeightPerLinearYard")) AndAlso
+       Not IsDBNull(rowSL("FabricRollWidth")) Then
+
             weightSL = CalculateFabricWeightInOunces(
             Convert.ToDecimal(rowSL("WeightPerLinearYard")),
             Convert.ToDecimal(rowSL("FabricRollWidth")),
             totalFabricSquareInches)
         End If
-        If rowPad IsNot Nothing Then
+
+        If rowPad IsNot Nothing AndAlso
+       Not IsDBNull(rowPad("WeightPerLinearYard")) AndAlso
+       Not IsDBNull(rowPad("FabricRollWidth")) Then
+
             weightPad = CalculateFabricWeightInOunces(
             Convert.ToDecimal(rowPad("WeightPerLinearYard")),
             Convert.ToDecimal(rowPad("FabricRollWidth")),
@@ -60,15 +74,18 @@ Module HelperFunctions
         End If
 
         If weightCW.HasValue AndAlso weightPad.HasValue Then
-            weightCWPad = Math.Round(weightCW.Value + weightPad.Value, 2)
+            weightCWPad = Decimal.Round(weightCW.Value + weightPad.Value, 2, MidpointRounding.AwayFromZero)
         End If
+
         If weightSL.HasValue AndAlso weightPad.HasValue Then
-            weightSLPad = Math.Round(weightSL.Value + weightPad.Value, 2)
+            weightSLPad = Decimal.Round(weightSL.Value + weightPad.Value, 2, MidpointRounding.AwayFromZero)
         End If
+
 
         Return (weightPad, weightCW, weightCWPad, weightSL, weightSLPad)
     End Function
     ' Place this in your form or a shared module as needed
+    ' HelperFunctions.vb
     Public Sub CalculateAndInsertModelLaborCosts(
     modelId As Integer,
     totalFabricSquareInches As Decimal,
@@ -104,22 +121,22 @@ Module HelperFunctions
     BaseCost_GrandTotal_Leather_Etsy As Decimal?,
     BaseCost_GrandTotal_LeatherPadded_Etsy As Decimal?
 )
-        Dim db As New DbConnectionManager()
+        ' NO instantiation of DbConnectionManager (it’s Shared-only)
         Dim wastePercent As Decimal = 5D
 
-        ' Calculate shipping cost for each fabric type/combination (shipping only)
-        Dim shipping_Choice As Decimal = db.GetShippingCostByWeight(If(weights.weight_ChoiceWaterproof, 0D))
-        Dim shipping_ChoicePadded As Decimal = db.GetShippingCostByWeight(If(weights.weight_ChoiceWaterproof_Padded, 0D))
-        Dim shipping_Leather As Decimal = db.GetShippingCostByWeight(If(weights.weight_PremiumSyntheticLeather, 0D))
-        Dim shipping_LeatherPadded As Decimal = db.GetShippingCostByWeight(If(weights.weight_PremiumSyntheticLeather_Padded, 0D))
+        ' Shipping by weight (coalesce nullable->Decimal)
+        Dim shipping_Choice As Decimal = DbConnectionManager.GetShippingCostByWeight(If(weights.weight_ChoiceWaterproof.HasValue, weights.weight_ChoiceWaterproof.Value, 0D))
+        Dim shipping_ChoicePadded As Decimal = DbConnectionManager.GetShippingCostByWeight(If(weights.weight_ChoiceWaterproof_Padded.HasValue, weights.weight_ChoiceWaterproof_Padded.Value, 0D))
+        Dim shipping_Leather As Decimal = DbConnectionManager.GetShippingCostByWeight(If(weights.weight_PremiumSyntheticLeather.HasValue, weights.weight_PremiumSyntheticLeather.Value, 0D))
+        Dim shipping_LeatherPadded As Decimal = DbConnectionManager.GetShippingCostByWeight(If(weights.weight_PremiumSyntheticLeather_Padded.HasValue, weights.weight_PremiumSyntheticLeather_Padded.Value, 0D))
 
-        ' Calculate base fabric cost + shipping for each type
+        ' Base fabric + shipping (nullable math, keep as Decimal?)
         Dim baseFabricCost_Choice_Weight As Decimal? = If(costs.baseCost_ChoiceWaterproof, 0D) + shipping_Choice
         Dim baseFabricCost_ChoicePadding_Weight As Decimal? = If(costs.baseCost_ChoiceWaterproof_Padded, 0D) + shipping_ChoicePadded
         Dim baseFabricCost_Leather_Weight As Decimal? = If(costs.baseCost_PremiumSyntheticLeather, 0D) + shipping_Leather
         Dim baseFabricCost_LeatherPadding_Weight As Decimal? = If(costs.baseCost_PremiumSyntheticLeather_Padded, 0D) + shipping_LeatherPadded
 
-        ' --- Labor cost calculations ---
+        ' Labor cost
         Dim hourlyRate As Decimal = 17D
         Dim CostLaborNoPadding As Decimal = 0.5D * hourlyRate
         Dim CostLaborWithPadding As Decimal = 1D * hourlyRate
@@ -129,9 +146,9 @@ Module HelperFunctions
         Dim BaseCost_Leather_Labor As Decimal? = If(baseFabricCost_Leather_Weight, 0D) + CostLaborNoPadding
         Dim BaseCost_LeatherPadding_Labor As Decimal? = If(baseFabricCost_LeatherPadding_Weight, 0D) + CostLaborWithPadding
 
-        ' --- Marketplace Fee Calculations for eBay and Etsy ---
-        Dim eBayFeePercent As Decimal = db.GetMarketplaceFeePercentage("eBay") / 100D
-        Dim etsyFeePercent As Decimal = db.GetMarketplaceFeePercentage("Etsy") / 100D
+        ' Marketplace fees
+        Dim eBayFeePercent As Decimal = DbConnectionManager.GetMarketplaceFeePercentage("eBay") / 100D
+        Dim etsyFeePercent As Decimal = DbConnectionManager.GetMarketplaceFeePercentage("Etsy") / 100D
 
         Dim eBayFee_Choice As Decimal = If(BaseCost_GrandTotal_Choice_eBay, 0D) * eBayFeePercent
         Dim eBayFee_ChoicePadded As Decimal = If(BaseCost_GrandTotal_ChoicePadded_eBay, 0D) * eBayFeePercent
@@ -143,7 +160,7 @@ Module HelperFunctions
         Dim EtsyFee_Leather As Decimal = If(BaseCost_GrandTotal_Leather_Etsy, 0D) * etsyFeePercent
         Dim EtsyFee_LeatherPadded As Decimal = If(BaseCost_GrandTotal_LeatherPadded_Etsy, 0D) * etsyFeePercent
 
-        ' --- Retail Price Placeholders (replace with your actual calculations) ---
+        ' Placeholder retail prices (keep as 0 unless you compute them here)
         Dim RetailPrice_Choice_Amazon As Decimal = 0D
         Dim RetailPrice_ChoicePadded_Amazon As Decimal = 0D
         Dim RetailPrice_Leather_Amazon As Decimal = 0D
@@ -161,8 +178,8 @@ Module HelperFunctions
         Dim RetailPrice_Leather_Etsy As Decimal = 0D
         Dim RetailPrice_LeatherPadded_Etsy As Decimal = 0D
 
-        ' Insert into history table (all arguments, in order)
-        db.InsertModelHistoryCostRetailPricing(
+        ' Call the long overload (added below) – accepts nullable values cleanly
+        DbConnectionManager.InsertModelHistoryCostRetailPricing(
         modelId,
         costs.costPerSqInch_ChoiceWaterproof,
         costs.costPerSqInch_PremiumSyntheticLeather,
@@ -203,14 +220,8 @@ Module HelperFunctions
         If(ReverbFee_ChoicePadded, 0D),
         If(ReverbFee_Leather, 0D),
         If(ReverbFee_LeatherPadded, 0D),
-        eBayFee_Choice,
-        eBayFee_ChoicePadded,
-        eBayFee_Leather,
-        eBayFee_LeatherPadded,
-        EtsyFee_Choice,
-        EtsyFee_ChoicePadded,
-        EtsyFee_Leather,
-        EtsyFee_LeatherPadded,
+        eBayFee_Choice, eBayFee_ChoicePadded, eBayFee_Leather, eBayFee_LeatherPadded,
+        EtsyFee_Choice, EtsyFee_ChoicePadded, EtsyFee_Leather, EtsyFee_LeatherPadded,
         If(BaseCost_GrandTotal_Choice_Amazon, 0D),
         If(BaseCost_GrandTotal_ChoicePadded_Amazon, 0D),
         If(BaseCost_GrandTotal_Leather_Amazon, 0D),
@@ -227,25 +238,14 @@ Module HelperFunctions
         If(BaseCost_GrandTotal_ChoicePadded_Etsy, 0D),
         If(BaseCost_GrandTotal_Leather_Etsy, 0D),
         If(BaseCost_GrandTotal_LeatherPadded_Etsy, 0D),
-        RetailPrice_Choice_Amazon,
-        RetailPrice_ChoicePadded_Amazon,
-        RetailPrice_Leather_Amazon,
-        RetailPrice_LeatherPadded_Amazon,
-        RetailPrice_Choice_Reverb,
-        RetailPrice_ChoicePadded_Reverb,
-        RetailPrice_Leather_Reverb,
-        RetailPrice_LeatherPadded_Reverb,
-        RetailPrice_Choice_eBay,
-        RetailPrice_ChoicePadded_eBay,
-        RetailPrice_Leather_eBay,
-        RetailPrice_LeatherPadded_eBay,
-        RetailPrice_Choice_Etsy,
-        RetailPrice_ChoicePadded_Etsy,
-        RetailPrice_Leather_Etsy,
-        RetailPrice_LeatherPadded_Etsy,
+        RetailPrice_Choice_Amazon, RetailPrice_ChoicePadded_Amazon, RetailPrice_Leather_Amazon, RetailPrice_LeatherPadded_Amazon,
+        RetailPrice_Choice_Reverb, RetailPrice_ChoicePadded_Reverb, RetailPrice_Leather_Reverb, RetailPrice_LeatherPadded_Reverb,
+        RetailPrice_Choice_eBay, RetailPrice_ChoicePadded_eBay, RetailPrice_Leather_eBay, RetailPrice_LeatherPadded_eBay,
+        RetailPrice_Choice_Etsy, RetailPrice_ChoicePadded_Etsy, RetailPrice_Leather_Etsy, RetailPrice_LeatherPadded_Etsy,
         notes
     )
     End Sub
+
     ' ================================================================
     ' File: HelperFunctions.vb
     ' Purpose:

@@ -1,8 +1,11 @@
 ﻿Imports System
-Imports System.IO
+
+Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Text.Json
 Imports System.Windows.Forms
+Imports System.IO
+Imports System.IO.Compression
 
 
 Public Class frmDashboard
@@ -423,6 +426,182 @@ Public Class frmDashboard
             End If
         Catch ex As Exception
             MessageBox.Show("Copy failed:" & Environment.NewLine & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+    Private Const SW_SHOWMINNOACTIVE As Integer = 7
+
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    Private Shared Function ShellExecute(hwnd As IntPtr,
+                                         lpOperation As String,
+                                         lpFile As String,
+                                         lpParameters As String,
+                                         lpDirectory As String,
+                                         nShowCmd As Integer) As IntPtr
+    End Function
+
+    ''' <summary>
+    ''' Opens a folder in Explorer minimized (background) to avoid stealing focus.
+    ''' </summary>
+    Private Sub OpenFolderInBackground(folderPath As String)
+        Try
+            If String.IsNullOrWhiteSpace(folderPath) OrElse Not Directory.Exists(folderPath) Then Exit Sub
+            ' Use ShellExecute with SW_SHOWMINNOACTIVE to open minimized without activating the window
+            ShellExecute(IntPtr.Zero, "open", folderPath, Nothing, Nothing, SW_SHOWMINNOACTIVE)
+        Catch
+            ' Non-fatal if Explorer fails to open; ignore.
+        End Try
+    End Sub
+    ' ================================================================================================
+    ' Sub: btnExportClasses_Click
+    ' Where: frmDashboard
+    ' Purpose: Export VB classes (or full repo) to a ZIP, with strong validation but no ZipArchive usage.
+    ' Date: 2025-09-10
+    ' ================================================================================================
+    Private Sub btnExportClasses_Click(sender As Object, e As EventArgs) Handles btnExportClasses.Click
+        Try
+            ' 1) Ask for repo root (folder that contains GGC.sln)
+            Dim repoRoot As String = Nothing
+            Using fbd As New FolderBrowserDialog()
+                fbd.Description = "Select your GGC repository root (folder that contains GGC.sln)."
+                fbd.ShowNewFolderButton = False
+                fbd.SelectedPath = AppDomain.CurrentDomain.BaseDirectory
+                If fbd.ShowDialog(Me) <> DialogResult.OK Then Exit Sub
+                repoRoot = fbd.SelectedPath
+            End Using
+
+            If String.IsNullOrWhiteSpace(repoRoot) OrElse Not Directory.Exists(repoRoot) Then
+                MessageBox.Show(Me, "Invalid folder selected.", "Export", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Exit Sub
+            End If
+
+            ' 2) Mode prompt: Yes = Classes-only ZIP (recommended); No = Full-repo ZIP
+            Dim modeMsg As String =
+            "Create a ZIP of ONLY your VB classes as .txt (recommended)?" & Environment.NewLine &
+            "Choose 'No' to zip the entire repo (filtered)."
+            Dim mode As CodeExporter.ExportMode =
+            If(MessageBox.Show(Me, modeMsg, "Choose Export Mode",
+                               MessageBoxButtons.YesNo,
+                               MessageBoxIcon.Question) = DialogResult.Yes,
+               CodeExporter.ExportMode.ClassesOnlyToTxtAndZip,
+               CodeExporter.ExportMode.FullRepoZip)
+
+            ' 3) Pre-check: make sure the chosen mode will actually have content
+            If mode = CodeExporter.ExportMode.ClassesOnlyToTxtAndZip Then
+                If Not RepoContainsVbFiles(repoRoot) Then
+                    MessageBox.Show(Me,
+                                "No .vb files were found beneath the folder you selected." & Environment.NewLine &
+                                "Pick the folder that contains your GGC.sln (the solution's root).",
+                                "Nothing to export",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information)
+                    Exit Sub
+                End If
+            Else
+                If Not RepoContainsAnyFilesExcludingBuildDirs(repoRoot) Then
+                    MessageBox.Show(Me,
+                                "No exportable files were found under the selected folder (after excluding bin/obj/.git/.vs/etc.).",
+                                "Nothing to export",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information)
+                    Exit Sub
+                End If
+            End If
+
+            ' 4) Run export + schema refresh + zip
+            Dim zipPath As String = Nothing
+            Dim ok As Boolean = CodeExporter.RunExportWithSchemaZip(repoRoot, mode, zipPath)
+
+            If Not ok OrElse String.IsNullOrWhiteSpace(zipPath) OrElse Not File.Exists(zipPath) Then
+                MessageBox.Show(Me, "Exporter did not produce a zip file.", "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Exit Sub
+            End If
+
+            ' 5) Light sanity: the minimum valid ZIP (EOCD only) is ~22 bytes. Use a higher floor to guard empties.
+            If Not ArchiveHasEntries(zipPath) Then
+                MessageBox.Show(Me,
+                            "The zip was created but appears to contain no files." & Environment.NewLine &
+                            "Re-check the selected folder. You may have picked the wrong root.",
+                            "Empty zip",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning)
+                Exit Sub
+            End If
+
+            ' 6) Open the folder (background) and show a passive toast
+            Dim zipFolder As String = Path.GetDirectoryName(zipPath)
+            OpenFolderInBackground(zipFolder)
+            NotifyExportCompleted(zipPath)
+
+        Catch ex As Exception
+            MessageBox.Show(Me,
+                        "Export failed: " & ex.Message,
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+
+    ' ================================================================================================
+    ' Function: ArchiveHasEntries
+    ' Purpose: Heuristic check that avoids System.IO.Compression types.
+    '   - Returns False if the zip doesn't exist or is suspiciously tiny.
+    '   - Paired with pre-checks so we don't rely on ZIP parsing at all.
+    ' Date: 2025-09-10
+    ' ================================================================================================
+    Private Function ArchiveHasEntries(zipPath As String) As Boolean
+        Try
+            Dim fi As New FileInfo(zipPath)
+            If Not fi.Exists Then Return False
+            ' A totally empty ZIP (or bad write) will be tiny. Use a conservative floor.
+            ' Most real exports will be >> 1 KB.
+            Return fi.Length >= 200
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ' ================================================================================================
+    ' Function: RepoContainsAnyFilesExcludingBuildDirs
+    ' Purpose: Detect if there are any files worth zipping, skipping heavy/build/VCS/editor folders.
+    ' Date: 2025-09-10
+    ' ================================================================================================
+    Private Function RepoContainsAnyFilesExcludingBuildDirs(root As String) As Boolean
+        If String.IsNullOrWhiteSpace(root) OrElse Not Directory.Exists(root) Then Return False
+
+        Dim excludedParts As String() = {"\bin\", "\obj\", "\.git\", "\.vs\", "\.idea\", "\node_modules\"}
+        For Each file In Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
+            Dim p = file.Replace("/"c, "\"c)
+            Dim skip As Boolean = excludedParts.Any(Function(part) p.IndexOf(part, StringComparison.OrdinalIgnoreCase) >= 0)
+            If Not skip Then Return True
+        Next
+        Return False
+    End Function
+
+
+    ' ================================================================================================
+    ' Function: RepoContainsVbFiles
+    ' Purpose: Returns True if any *.vb files exist beneath the selected root.
+    ' Date: 2025-09-10
+    ' ================================================================================================
+    Private Function RepoContainsVbFiles(root As String) As Boolean
+        If String.IsNullOrWhiteSpace(root) OrElse Not Directory.Exists(root) Then Return False
+        Return Directory.EnumerateFiles(root, "*.vb", SearchOption.AllDirectories).Any()
+    End Function
+
+    ''' <summary>
+    ''' Non-blocking confirmation that shows the zip file name; does not ask anything.
+    ''' </summary>
+    Private Sub NotifyExportCompleted(zipPath As String)
+        Try
+            Dim fileName = Path.GetFileName(zipPath)
+            ' Short, informational message that won't block your flow.
+            ' If you prefer zero UI, remove this entirely.
+            Dim msg = $"Export completed: {fileName}" & Environment.NewLine &
+                      $"Location: {Path.GetDirectoryName(zipPath)}"
+            MessageBox.Show(Me, msg, "Export Ready", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        Catch
+            ' Ignore UI errors
         End Try
     End Sub
 

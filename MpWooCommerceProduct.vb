@@ -35,6 +35,7 @@
     Public Property attributes As List(Of MpWooAttribute) ' REQUIRED for parent product (Defines variation attributes, e.g., Fabric, Color)
     Public Property default_attributes As List(Of MpWooDefaultAttribute) ' OPTIONAL for parent product (Default selected attributes)
     Public Property variations As List(Of Integer) ' OPTIONAL for parent product (Usually managed by WooCommerce after creation)
+    Public Property variation_products As List(Of MpWooVariation)
     Public Property grouped_products As List(Of Integer) ' OPTIONAL for parent product (For grouped product type)
     Public Property menu_order As Integer? ' OPTIONAL for parent product
     Public Property virtual As Boolean? ' OPTIONAL for parent product
@@ -87,6 +88,22 @@
     Public Class MpWooMetaData
         Public Property key As String
         Public Property value As String
+    End Class
+
+    Public Class MpWooVariation
+        Public Property sku As String ' Unique SKU for the variation
+        Public Property regular_price As String ' Price for the variation
+        Public Property sale_price As String ' Optional sale price
+        Public Property manage_stock As Boolean? ' Stock management flag
+        Public Property stock_quantity As Integer? ' Stock quantity
+        Public Property stock_status As String ' "instock", "outofstock", etc.
+        Public Property weight As String ' Weight for shipping
+        Public Property attributes As List(Of MpWooAttribute) ' Attributes defining this variation (e.g., Fabric)
+        Public Property image As MpWooCommerceProduct.MpWooImage ' Main image for the variation
+        Public Property description As String ' Optional description for the variation
+        Public Property meta_data As List(Of MpWooCommerceProduct.MpWooMetaData) ' Custom fields
+
+        ' Add more properties as needed for your WooCommerce setup
     End Class
 
 End Class

@@ -15,10 +15,14 @@
     '*****************************************************************************************************************************************************************
 #Region "Sample Product Listing Display"
 
-    Public Sub SetSampleProductInfo(title As String, description As String)
-        lblWooSampleTitle.Text = title
-        txtWooLongDescriptionPreview.Text = description
-        wbWooLongDescriptionPreview.DocumentText = description
+    Public Sub SetWooProductInfo(wooTitle As String, wooLongDescription As String)
+        lblWooSampleTitle.Text = wooTitle
+        txtWooLongDescriptionPreview.Text = wooLongDescription
+        wbWooLongDescriptionPreview.DocumentText = wooLongDescription
+    End Sub
+
+    Private Sub txtWooLongDescriptionPreview_TextChanged(sender As Object, e As EventArgs) Handles txtWooLongDescriptionPreview.TextChanged
+
     End Sub
 
 #End Region

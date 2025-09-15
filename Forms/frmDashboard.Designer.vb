@@ -29,6 +29,7 @@ Partial Class frmDashboard
         Me.btnGenerateGitLinks = New System.Windows.Forms.Button()
         Me.btnCopyGitLinks = New System.Windows.Forms.Button()
         Me.lvGitLinks = New System.Windows.Forms.ListView()
+        Me.btnExportClasses = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'btnMaterialsDataEntry
@@ -94,11 +95,21 @@ Partial Class frmDashboard
         Me.lvGitLinks.TabIndex = 6
         Me.lvGitLinks.UseCompatibleStateImageBehavior = False
         '
+        'btnExportClasses
+        '
+        Me.btnExportClasses.Location = New System.Drawing.Point(433, 320)
+        Me.btnExportClasses.Name = "btnExportClasses"
+        Me.btnExportClasses.Size = New System.Drawing.Size(218, 73)
+        Me.btnExportClasses.TabIndex = 7
+        Me.btnExportClasses.Text = "btnExportClasses"
+        Me.btnExportClasses.UseVisualStyleBackColor = True
+        '
         'frmDashboard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(2294, 1282)
+        Me.Controls.Add(Me.btnExportClasses)
         Me.Controls.Add(Me.lvGitLinks)
         Me.Controls.Add(Me.btnCopyGitLinks)
         Me.Controls.Add(Me.btnGenerateGitLinks)
@@ -119,4 +130,5 @@ Partial Class frmDashboard
     Friend WithEvents btnGenerateGitLinks As Windows.Forms.Button
     Friend WithEvents btnCopyGitLinks As Windows.Forms.Button
     Friend WithEvents lvGitLinks As Windows.Forms.ListView
+    Friend WithEvents btnExportClasses As Windows.Forms.Button
 End Class
