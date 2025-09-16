@@ -4,6 +4,7 @@ Imports System.Configuration
 Imports System.Data
 Imports System.Data.SqlClient
 Imports System.Text
+Imports System.Linq
 
 
 Public NotInheritable Class DbConnectionManager
@@ -1041,26 +1042,88 @@ WHEN MATCHED THEN
 WHEN NOT MATCHED THEN
     INSERT (FK_ModelId, ParentSku, WooProductId, WooCategoryId, SyncStatus, LastMessage, CreatedAtUtc, UpdatedAtUtc)
     VALUES (@ModelId, @ParentSku, @WooProductId, @WooCategoryId, @Status, @Message, SYSUTCDATETIME(), SYSUTCDATETIME())
-OUTPUT inserted.PK_MpWooProductId;"
+OUTPUT inserted.PK_MpWooProductId;"  ' <-- matches the (renamed) PK
                 cmd.Parameters.Add("@ModelId", SqlDbType.Int).Value = modelId
-                cmd.Parameters.Add("@ParentSku", SqlDbType.NVarChar, 200).Value = parentSku
+                cmd.Parameters.Add("@ParentSku", SqlDbType.NVarChar, 64).Value = If(parentSku, String.Empty)
+
                 If wooProductId.HasValue Then
                     cmd.Parameters.Add("@WooProductId", SqlDbType.Int).Value = wooProductId.Value
                 Else
                     cmd.Parameters.Add("@WooProductId", SqlDbType.Int).Value = DBNull.Value
                 End If
+
                 If wooCategoryId.HasValue Then
                     cmd.Parameters.Add("@WooCategoryId", SqlDbType.Int).Value = wooCategoryId.Value
                 Else
                     cmd.Parameters.Add("@WooCategoryId", SqlDbType.Int).Value = DBNull.Value
                 End If
-                cmd.Parameters.Add("@Status", SqlDbType.NVarChar, 50).Value = If(status, String.Empty)
+
+                cmd.Parameters.Add("@Status", SqlDbType.NVarChar, 32).Value = If(status, String.Empty)
                 cmd.Parameters.Add("@Message", SqlDbType.NVarChar, -1).Value = If(message, String.Empty)
+
                 Dim id As Object = cmd.ExecuteScalar()
                 Return Convert.ToInt32(id)
             End Using
         End Using
     End Function
+
+    ' DbConnectionManager.vb
+
+    ' --- Fabric: name -> 1-char abbreviation (dbo.fabrictypename) ---
+    Public Shared Function GetFabricAbbreviationMap() As Dictionary(Of String, String)
+        Dim dict As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+        Using conn = GetConnection()
+            EnsureOpen(conn)
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "SELECT FabricTypeName, FabricTypeNameAbbreviation " &
+                              "FROM dbo.fabrictypename " &
+                              "WHERE FabricTypeName IS NOT NULL " &
+                              "  AND FabricTypeNameAbbreviation IS NOT NULL " &
+                              "  AND LTRIM(RTRIM(FabricTypeNameAbbreviation)) <> '';"
+                Using rd = cmd.ExecuteReader()
+                    While rd.Read()
+                        Dim name As String = If(rd.IsDBNull(0), "", rd.GetString(0)).Trim()
+                        Dim code As String = If(rd.IsDBNull(1), "", rd.GetString(1)).Trim().ToUpperInvariant()
+                        If code.Length > 1 Then code = code.Substring(0, 1)
+                        If code.Length < 1 Then code = "X"          ' or: code = code.PadRight(1, "X"c)
+                        If name <> "" Then dict(name) = code
+                    End While
+                End Using
+            End Using
+        End Using
+        Return dict
+    End Function
+
+    ' --- Color: name -> 3-char abbreviation (dbo.fabriccolor) ---
+    Public Shared Function GetColorAbbreviationMap() As Dictionary(Of String, String)
+        Dim dict As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+        Using conn = GetConnection()
+            EnsureOpen(conn)
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "SELECT ColorName, ColorNameAbbreviation " &
+                              "FROM dbo.fabriccolor " &
+                              "WHERE ColorName IS NOT NULL " &
+                              "  AND ColorNameAbbreviation IS NOT NULL " &
+                              "  AND LTRIM(RTRIM(ColorNameAbbreviation)) <> '';"
+                Using rd = cmd.ExecuteReader()
+                    While rd.Read()
+                        Dim name As String = If(rd.IsDBNull(0), "", rd.GetString(0)).Trim()
+                        Dim code As String = If(rd.IsDBNull(1), "", rd.GetString(1)).Trim().ToUpperInvariant()
+                        If code.Length > 3 Then code = code.Substring(0, 3)
+                        If code.Length < 3 Then code = code.PadRight(3, "X"c)    ' ✅ correct char literal
+                        If name <> "" Then dict(name) = code
+                    End While
+                End Using
+            End Using
+        End Using
+        Return dict
+    End Function
+
+
+
+    ' --- Color: name -> 3-char abbreviation (dbo.ColorName; falls back to dbo.Color) ---
+
+
 
     ' Optional: track the Woo media used for a variation image
     Public Shared Sub UpsertMpWooVariationMedia(mpWooProductId As Integer,
@@ -1105,88 +1168,59 @@ WHEN NOT MATCHED THEN
     '       LastSyncNote        NVARCHAR(4000) NULL,
     '       LastSyncedOn        DATETIME2 NOT NULL
     '   )
-    Public Shared Function UpsertMpWooVariation(
-    mpWooProductId As Integer,
-    variationSku As String,
-    wooVariationId As Integer,
-    fabricOption As String,
-    colorOption As String,
-    status As String,
-    note As String
-) As Integer
-
+    Public Shared Function UpsertMpWooVariation(mpWooProductId As Integer,
+                                            childSku As String,
+                                            wooVariationId As Integer?,
+                                            fabricOption As String,
+                                            colorOption As String,
+                                            status As String,
+                                            note As String) As Integer
         Using conn = GetConnection()
             EnsureOpen(conn)
+            Using cmd = conn.CreateCommand()
 
-            ' 1) Does a row already exist for (ProductId + SKU)?
-            Dim existingId As Integer = 0
-            Using checkCmd = conn.CreateCommand()
-                checkCmd.CommandText = "
-                SELECT TOP 1 PK_MpWooVariationId
-                FROM MpWooVariation
-                WHERE FK_MpWooProductId = @pid AND VariationSku = @sku;"
-                checkCmd.Parameters.Add("@pid", SqlDbType.Int).Value = mpWooProductId
-                checkCmd.Parameters.Add("@sku", SqlDbType.NVarChar, 200).Value = variationSku
-
-                Dim o = checkCmd.ExecuteScalar()
-                If o IsNot Nothing AndAlso o IsNot DBNull.Value Then
-                    existingId = Convert.ToInt32(o)
+                Dim child As String = If(childSku, "").Trim()
+                If child.Length = 0 Then
+                    Throw New ArgumentException("ChildSKU must not be empty.", NameOf(childSku))
                 End If
+
+                cmd.CommandText = "
+MERGE dbo.MpWooVariation AS T
+USING (SELECT @FK AS FK, @ChildSku AS ChildSKU) AS S
+ON (T.FK_MpWooProductId = S.FK AND T.ChildSKU = S.ChildSKU)
+WHEN MATCHED THEN
+    UPDATE SET
+        T.WooVariationId  = COALESCE(@WooVarId, T.WooVariationId),
+        T.FabricOption    = @FabricOption,
+        T.ColorOption     = @ColorOption,
+        T.LastSyncStatus  = @Status,
+        T.LastSyncNote    = @Note,
+        T.LastSyncedOn    = SYSUTCDATETIME()
+WHEN NOT MATCHED THEN
+    INSERT (FK_MpWooProductId, ChildSKU, WooVariationId, FabricOption, ColorOption, LastSyncStatus, LastSyncNote, LastSyncedOn)
+    VALUES (@FK, @ChildSku, @WooVarId, @FabricOption, @ColorOption, @Status, @Note, SYSUTCDATETIME())
+OUTPUT inserted.PK_MpWooVariationId;
+"
+                cmd.Parameters.Add("@FK", SqlDbType.Int).Value = mpWooProductId
+                cmd.Parameters.Add("@ChildSku", SqlDbType.NVarChar, 128).Value = child
+
+                If wooVariationId.HasValue Then
+                    cmd.Parameters.Add("@WooVarId", SqlDbType.Int).Value = wooVariationId.Value
+                Else
+                    cmd.Parameters.Add("@WooVarId", SqlDbType.Int).Value = DBNull.Value
+                End If
+
+                cmd.Parameters.Add("@FabricOption", SqlDbType.NVarChar, 200).Value = If(fabricOption, "")
+                cmd.Parameters.Add("@ColorOption", SqlDbType.NVarChar, 200).Value = If(colorOption, "")
+                cmd.Parameters.Add("@Status", SqlDbType.NVarChar, 64).Value = If(status, "")
+                cmd.Parameters.Add("@Note", SqlDbType.NVarChar, -1).Value = If(note, "")
+
+                Dim idObj = cmd.ExecuteScalar()
+                Return Convert.ToInt32(idObj)
             End Using
-
-            ' 2) Update or Insert
-            If existingId > 0 Then
-                Using upd = conn.CreateCommand()
-                    upd.CommandText = "
-                    UPDATE MpWooVariation
-                    SET WooVariationId = @wvid,
-                        FabricOption   = @fab,
-                        ColorOption    = @col,
-                        LastSyncStatus = @status,
-                        LastSyncNote   = @note,
-                        LastSyncedOn   = @synced
-                    WHERE PK_MpWooVariationId = @id;"
-                    upd.Parameters.Add("@wvid", SqlDbType.Int).Value = wooVariationId
-                    upd.Parameters.Add("@fab", SqlDbType.NVarChar, 200).Value = If(fabricOption, String.Empty)
-                    upd.Parameters.Add("@col", SqlDbType.NVarChar, 200).Value = If(colorOption, String.Empty)
-                    upd.Parameters.Add("@status", SqlDbType.NVarChar, 50).Value = If(status, String.Empty)
-
-                    Dim pNote = upd.Parameters.Add("@note", SqlDbType.NVarChar, 4000)
-                    pNote.Value = If(note Is Nothing, CType(DBNull.Value, Object), note)
-
-                    upd.Parameters.Add("@synced", SqlDbType.DateTime2).Value = Date.UtcNow
-                    upd.Parameters.Add("@id", SqlDbType.Int).Value = existingId
-                    upd.ExecuteNonQuery()
-                End Using
-
-                Return existingId
-            Else
-                Using ins = conn.CreateCommand()
-                    ins.CommandText = "
-                    INSERT INTO MpWooVariation
-                    (FK_MpWooProductId, VariationSku, WooVariationId, FabricOption, ColorOption,
-                     LastSyncStatus, LastSyncNote, LastSyncedOn)
-                    VALUES
-                    (@pid, @sku, @wvid, @fab, @col, @status, @note, @synced);
-                    SELECT CAST(SCOPE_IDENTITY() AS int);"
-                    ins.Parameters.Add("@pid", SqlDbType.Int).Value = mpWooProductId
-                    ins.Parameters.Add("@sku", SqlDbType.NVarChar, 200).Value = variationSku
-                    ins.Parameters.Add("@wvid", SqlDbType.Int).Value = wooVariationId
-                    ins.Parameters.Add("@fab", SqlDbType.NVarChar, 200).Value = If(fabricOption, String.Empty)
-                    ins.Parameters.Add("@col", SqlDbType.NVarChar, 200).Value = If(colorOption, String.Empty)
-                    ins.Parameters.Add("@status", SqlDbType.NVarChar, 50).Value = If(status, String.Empty)
-
-                    Dim pNote = ins.Parameters.Add("@note", SqlDbType.NVarChar, 4000)
-                    pNote.Value = If(note Is Nothing, CType(DBNull.Value, Object), note)
-
-                    ins.Parameters.Add("@synced", SqlDbType.DateTime2).Value = Date.UtcNow
-
-                    Dim newId = ins.ExecuteScalar()
-                    Return Convert.ToInt32(newId)
-                End Using
-            End If
         End Using
     End Function
+
 
 
 

@@ -56,6 +56,7 @@ Partial Class frmAddModelInformation
         Me.txtTitlePreview = New System.Windows.Forms.TextBox()
         Me.grpAddOns = New System.Windows.Forms.GroupBox()
         Me.lvAddOns = New System.Windows.Forms.ListView()
+        Me.btnPublishSelectedSeries = New System.Windows.Forms.Button()
         CType(Me.dgvModelInformation, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.dgvSeriesName, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlVariationBuilder.SuspendLayout()
@@ -402,11 +403,21 @@ Partial Class frmAddModelInformation
         Me.lvAddOns.TabIndex = 0
         Me.lvAddOns.UseCompatibleStateImageBehavior = False
         '
+        'btnPublishSelectedSeries
+        '
+        Me.btnPublishSelectedSeries.Location = New System.Drawing.Point(331, 131)
+        Me.btnPublishSelectedSeries.Name = "btnPublishSelectedSeries"
+        Me.btnPublishSelectedSeries.Size = New System.Drawing.Size(139, 58)
+        Me.btnPublishSelectedSeries.TabIndex = 19
+        Me.btnPublishSelectedSeries.Text = "Button1"
+        Me.btnPublishSelectedSeries.UseVisualStyleBackColor = True
+        '
         'frmAddModelInformation
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(2626, 1183)
+        Me.Controls.Add(Me.btnPublishSelectedSeries)
         Me.Controls.Add(Me.pnlVariationBuilder)
         Me.Controls.Add(Me.btnPublishFabricColor)
         Me.Controls.Add(Me.btnFixMissingParentSkus)
@@ -478,4 +489,5 @@ Partial Class frmAddModelInformation
     Friend WithEvents TextBox1txtVariationIMageURL As Windows.Forms.TextBox
     Friend WithEvents grpAddOns As Windows.Forms.GroupBox
     Friend WithEvents lvAddOns As Windows.Forms.ListView
+    Friend WithEvents btnPublishSelectedSeries As Windows.Forms.Button
 End Class

@@ -1,5 +1,11 @@
-﻿Imports System.Data
+﻿Imports System
+Imports System.Collections.Generic
+Imports System.Data
+Imports System.Data.SqlClient
+Imports System.Linq
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
+
 
 Public Class frmAddModelInformation
 
@@ -468,37 +474,96 @@ Public Class frmAddModelInformation
         BindComboSmart(cmbProduct, prods, {"BrandProductName", "ProductName"}, {"PK_FabricBrandProductNameId", "ProductId"})
     End Sub
 
-    ' ========= buttons =========
-    Private Async Sub btnUploadWooListings_Click(sender As Object, e As EventArgs)
-        Dim txtModelId = FindTextBox("txtModelId")
-        Dim modelId As Integer
-        If txtModelId Is Nothing OrElse Not Integer.TryParse(txtModelId.Text, modelId) OrElse modelId <= 0 Then
-            MessageBox.Show("Enter a valid ModelId.", "Upload", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    '==============================================================================
+    ' Sub: btnUploadWooListings_Click
+    ' Form: frmAddModelInformation
+    ' Purpose:
+    '   Batch publish all models in dgvModelInformation to WooCommerce with a live
+    '   progress dialog (log + progress bar + cancel).
+    '
+    ' Dependencies:
+    '   - DataGridView named dgvModelInformation with column "PK_ModelId" (Integer).
+    '   - Optional checkbox column "Include" to filter rows.
+    '   - WooVariationPublisher.PublishModelAsync(modelId) As Task(Of PublishResult)
+    '   - Helper ExtractModelIdsFromGrid (provided below).
+    '
+    ' Date: 2025-09-15
+    '------------------------------------------------------------------------------
+    Private Async Sub btnUploadWooListings_Click(sender As Object, e As EventArgs) Handles btnUploadWooListings.Click
+        If dgvModelInformation Is Nothing OrElse dgvModelInformation.Rows.Count = 0 Then
+            MessageBox.Show("No rows in the grid to upload.", "Nothing to do", MessageBoxButtons.OK, MessageBoxIcon.Information)
             Exit Sub
         End If
 
-        Dim btn = TryCast(sender, Button)
+        Dim modelIds As List(Of Integer) = ExtractModelIdsFromGrid(dgvModelInformation, "PK_ModelId", optionalIncludeColName:="Include")
+        If modelIds Is Nothing OrElse modelIds.Count = 0 Then
+            MessageBox.Show("No models selected. Check your grid (and 'Include' if present).", "Nothing selected", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
+
+        Dim ok As New List(Of String)
+        Dim bad As New List(Of String)
+
+        Dim btn = TryCast(sender, Control)
         If btn IsNot Nothing Then btn.Enabled = False
         Cursor.Current = Cursors.WaitCursor
+
+        Dim dlg As New frmPublishProgress()
         Try
-            Dim outcome = Await WooVariationPublisher.PublishModelAsync(modelId)
-            If outcome.Success Then
-                MessageBox.Show(
-                    $"Uploaded: Product {outcome.ProductId} ({outcome.ParentSku}), Variations: {outcome.VariationResults.Count}",
-                    "Woo Upload",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                )
-            Else
-                MessageBox.Show($"Upload failed: {outcome.Message}", "Woo Upload", MessageBoxButtons.OK, MessageBoxIcon.[Error])
-            End If
-        Catch ex As Exception
-            MessageBox.Show("Unexpected error: " & ex.Message, "Woo Upload", MessageBoxButtons.OK, MessageBoxIcon.[Error])
+            ' Show modeless so UI stays responsive
+            dlg.Show(Me)
+            dlg.StartBatch(modelIds.Count, "Publishing models to WooCommerce…")
+
+            For i = 0 To modelIds.Count - 1
+                Dim modelId = modelIds(i)
+
+                If dlg.IsCancelRequested Then
+                    dlg.LogLine("Batch canceled by user.")
+                    Exit For
+                End If
+
+                dlg.SetStatus($"Publishing model {modelId} ({i + 1}/{modelIds.Count})…")
+                dlg.LogLine($"Model {modelId}: starting")
+
+                Dim result As PublishResult = Nothing
+                Try
+                    result = Await WooVariationPublisher.PublishModelAsync(modelId)
+                Catch ex As Exception
+                    result = New PublishResult With {.Success = False, .Message = ex.Message}
+                End Try
+
+                If result IsNot Nothing AndAlso result.Success Then
+                    ok.Add($"Model {modelId}: Parent WooID {result.ProductId}, Variations={result.VariationResults.Count}")
+                    dlg.LogLine($"Model {modelId}: ✅ success (WooID {result.ProductId}, {result.VariationResults.Count} variations)")
+                Else
+                    Dim msg As String = If(result?.Message, "Unknown error")
+                    bad.Add($"Model {modelId}: {msg}")
+                    dlg.LogLine($"Model {modelId}: ❌ {msg}")
+                End If
+
+                dlg.Advance($"Publishing models… ({i + 1}/{modelIds.Count})")
+            Next
+
+            ' Final summary
+            dlg.LogLine("Batch complete.")
+            Dim summary As String =
+            $"Processed {ok.Count + bad.Count} of {modelIds.Count}." &
+            If(ok.Count > 0, Environment.NewLine & $"Successes ({ok.Count}):" & Environment.NewLine & "- " & String.Join(Environment.NewLine & "- ", ok), "") &
+            If(bad.Count > 0, Environment.NewLine & $"Failures ({bad.Count}):" & Environment.NewLine & "- " & String.Join(Environment.NewLine & "- ", bad), "")
+
+            MessageBox.Show(summary, If(bad.Count = 0, "WooCommerce Upload Results", "WooCommerce Upload Results — Some Failures"),
+                        MessageBoxButtons.OK, If(bad.Count = 0, MessageBoxIcon.Information, MessageBoxIcon.Warning))
+
         Finally
+            dlg.Close()
+            dlg.Dispose()
             Cursor.Current = Cursors.Default
             If btn IsNot Nothing Then btn.Enabled = True
         End Try
     End Sub
+
+
+
 
     Private Sub btnSavePricing_Click(sender As Object, e As EventArgs)
         Dim cmbSupplier = FindCombo("cmbSupplier")
@@ -560,6 +625,41 @@ Public Class frmAddModelInformation
         DbConnectionManager.UpdateFabricProductInfo(productId, weight, rollWidth)
         MessageBox.Show("Product info updated.")
     End Sub
+
+
+    '==============================================================================
+    ' Function: ExtractModelIdsFromGrid
+    ' Purpose:
+    '   Return distinct positive PK_ModelId values from the grid.
+    '   If optionalIncludeColName exists, only rows with True in that column are used.
+    ' Date: 2025-09-15
+    '------------------------------------------------------------------------------
+    Private Function ExtractModelIdsFromGrid(grid As DataGridView, idColName As String, Optional optionalIncludeColName As String = Nothing) As List(Of Integer)
+        Dim result As New List(Of Integer)
+        If grid Is Nothing OrElse grid.Rows.Count = 0 Then Return result
+        If Not grid.Columns.Contains(idColName) Then Throw New InvalidOperationException($"Grid is missing required column '{idColName}'.")
+
+        Dim useInclude As Boolean = Not String.IsNullOrWhiteSpace(optionalIncludeColName) AndAlso grid.Columns.Contains(optionalIncludeColName)
+
+        For Each r As DataGridViewRow In grid.Rows
+            If r.IsNewRow Then Continue For
+
+            If useInclude Then
+                Dim inc As Boolean = False
+                Dim incObj = r.Cells(optionalIncludeColName).Value
+                If incObj IsNot Nothing AndAlso incObj IsNot DBNull.Value Then Boolean.TryParse(incObj.ToString(), inc)
+                If Not inc Then Continue For
+            End If
+
+            Dim idObj = r.Cells(idColName).Value
+            Dim id As Integer
+            If idObj IsNot Nothing AndAlso idObj IsNot DBNull.Value AndAlso Integer.TryParse(idObj.ToString(), id) AndAlso id > 0 Then
+                result.Add(id)
+            End If
+        Next
+
+        Return result.Distinct().ToList()
+    End Function
 
     Private Sub LoadModelsForSelectedSeries()
         If Not isFormLoaded Then Exit Sub
@@ -783,6 +883,202 @@ Public Class frmAddModelInformation
         ' Avoid hard crashes on parse/combobox issues; show a friendly message if needed
         e.ThrowException = False
     End Sub
+
+    '==============================================================================
+    ' Sub: btnPublishSelectedSeries_Click
+    ' Form: frmAddModelInformation
+    ' Purpose:
+    '   Publish all models for the *currently selected* Manufacturer + Series
+    '   (from cmbManufacturerName, cmbSeriesName) to WooCommerce.
+    '   - Does NOT read anything from dgvModelInformation
+    '   - Loads models directly from DB via joins (robust to schema quirks)
+    '   - Streams progress with frmPublishProgress
+    '
+    ' Dependencies:
+    '   - ComboBoxes: cmbManufacturerName (SelectedValue = PK_ManufacturerId),
+    '                 cmbSeriesName (SelectedValue = PK_SeriesId)
+    '   - DbConnectionManager.GetConnection(), EnsureOpen(conn)
+    '   - WooVariationPublisher.PublishModelAsync(modelId)
+    '   - frmPublishProgress (provided earlier)
+    '
+    ' Date: 2025-09-15
+    '------------------------------------------------------------------------------
+    Private Async Sub btnPublishSelectedSeries_Click(sender As Object, e As EventArgs) Handles btnPublishSelectedSeries.Click
+        ' 1) Read selections safely
+        Dim manufacturerId As Integer = 0
+        Dim seriesId As Integer = 0
+
+        If cmbManufacturerName Is Nothing OrElse cmbManufacturerName.SelectedValue Is Nothing _
+           OrElse Not Integer.TryParse(cmbManufacturerName.SelectedValue.ToString(), manufacturerId) _
+           OrElse manufacturerId <= 0 Then
+            MessageBox.Show("Pick a Manufacturer first.", "Missing selection", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
+
+        If cmbSeriesName Is Nothing OrElse cmbSeriesName.SelectedValue Is Nothing _
+           OrElse Not Integer.TryParse(cmbSeriesName.SelectedValue.ToString(), seriesId) _
+           OrElse seriesId <= 0 Then
+            MessageBox.Show("Pick a Series first.", "Missing selection", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
+
+        ' 2) Load models for this Manufacturer + Series (direct from DB, not the grid)
+        Dim dt As DataTable = LoadModelsForSelection(manufacturerId, seriesId)
+
+        If dt Is Nothing OrElse dt.Rows.Count = 0 Then
+            MessageBox.Show("No models found for that Manufacturer/Series.", "Nothing to publish", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
+
+        ' Pull the list of ModelIds we will publish
+        Dim modelIds As List(Of Integer) =
+            (From r As DataRow In dt.Rows
+             Let v = If(r("PK_ModelId"), 0)
+             Let mid = If(v Is DBNull.Value, 0, Convert.ToInt32(v))
+             Where mid > 0
+             Select mid).Distinct().ToList()
+
+        If modelIds.Count = 0 Then
+            MessageBox.Show("No valid Model IDs found.", "Nothing to publish", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Exit Sub
+        End If
+
+        ' Optional: nice label for the dialog title
+        Dim manuName As String = SafeField(dt, "ManufacturerName")
+        Dim seriesName As String = SafeField(dt, "SeriesName")
+
+        ' 3) Show progress dialog and publish
+        Dim ok As New List(Of String)
+        Dim bad As New List(Of String)
+
+        Dim btn = TryCast(sender, Control)
+        If btn IsNot Nothing Then btn.Enabled = False
+        Cursor.Current = Cursors.WaitCursor
+
+        Dim dlg As New frmPublishProgress()
+        Try
+            dlg.Show(Me)
+            Dim title As String = If(String.IsNullOrWhiteSpace(manuName) AndAlso String.IsNullOrWhiteSpace(seriesName),
+                                     "Publishing selected series…",
+                                     $"Publishing: {manuName} • {seriesName}")
+            dlg.StartBatch(modelIds.Count, title)
+
+            For i = 0 To modelIds.Count - 1
+                Dim mid = modelIds(i)
+
+                If dlg.IsCancelRequested Then
+                    dlg.LogLine("Batch canceled by user.")
+                    Exit For
+                End If
+
+                dlg.SetStatus($"Publishing model {mid} ({i + 1}/{modelIds.Count})…")
+                dlg.LogLine($"Model {mid}: starting")
+
+                Dim result As PublishResult = Nothing
+                Try
+                    result = Await WooVariationPublisher.PublishModelAsync(mid)
+                Catch ex As Exception
+                    result = New PublishResult With {.Success = False, .Message = ex.Message}
+                End Try
+
+                If result IsNot Nothing AndAlso result.Success Then
+                    ok.Add($"Model {mid}: Parent WooID {result.ProductId}, Variations={result.VariationResults.Count}")
+                    dlg.LogLine($"Model {mid}: ✅ success (WooID {result.ProductId}, {result.VariationResults.Count} variations)")
+                Else
+                    Dim msg As String = If(result?.Message, "Unknown error")
+                    bad.Add($"Model {mid}: {msg}")
+                    dlg.LogLine($"Model {mid}: ❌ {msg}")
+                End If
+
+                dlg.Advance($"Publishing models… ({i + 1}/{modelIds.Count})")
+            Next
+
+            ' 4) Final summary
+            dlg.LogLine("Batch complete.")
+            Dim summary As String =
+                $"Processed {ok.Count + bad.Count} of {modelIds.Count}." &
+                If(ok.Count > 0, Environment.NewLine & $"Successes ({ok.Count}):" & Environment.NewLine & "- " & String.Join(Environment.NewLine & "- ", ok), "") &
+                If(bad.Count > 0, Environment.NewLine & $"Failures ({bad.Count}):" & Environment.NewLine & "- " & String.Join(Environment.NewLine & "- ", bad), "")
+
+            MessageBox.Show(summary,
+                            If(bad.Count = 0, "WooCommerce Upload Results", "WooCommerce Upload Results — Some Failures"),
+                            MessageBoxButtons.OK,
+                            If(bad.Count = 0, MessageBoxIcon.Information, MessageBoxIcon.Warning))
+
+        Finally
+            dlg.Close()
+            dlg.Dispose()
+            Cursor.Current = Cursors.Default
+            If btn IsNot Nothing Then btn.Enabled = True
+        End Try
+    End Sub
+    '==============================================================================
+    ' Function: LoadModelsForSelection
+    ' Form: frmAddModelInformation
+    ' Purpose:
+    '   Return a DataTable of models for a given Manufacturer + Series, including
+    '   only the columns the publisher truly needs:
+    '     - PK_ModelId
+    '     - ModelName
+    '     - ParentSKU
+    '     - FK_SeriesId  (so PublishModelAsync can resolve category)
+    '     - ManufacturerName, SeriesName (nice-to-have for dialog labeling)
+    '
+    ' Notes:
+    '   - We do NOT touch Model.FK_ManufacturerId (which caused your error).
+    '     Instead, we filter via the Series → Manufacturer chain:
+    '       Model (FK_SeriesId) → ModelSeries (FK_ManufacturerId)
+    '
+    ' Date: 2025-09-15
+    '------------------------------------------------------------------------------
+    Private Function LoadModelsForSelection(manufacturerId As Integer, seriesId As Integer) As DataTable
+        Dim dt As New DataTable()
+
+        Using conn As SqlConnection = DbConnectionManager.GetConnection()
+            DbConnectionManager.EnsureOpen(conn)
+
+            ' We filter by SeriesId and ManufacturerId using joins.
+            ' Adjust table/column names if your actual schema differs.
+            Dim sql As String = "
+            SELECT
+                m.PK_ModelId,
+                m.ModelName,
+                m.ParentSKU,
+                m.FK_SeriesId,
+                mf.ManufacturerName,
+                s.SeriesName
+            FROM Model              AS m
+            INNER JOIN ModelSeries  AS s  ON s.PK_SeriesId        = m.FK_SeriesId
+            INNER JOIN ModelManufacturers AS mf ON mf.PK_ManufacturerId = s.FK_ManufacturerId
+            WHERE s.PK_SeriesId = @sid
+              AND mf.PK_ManufacturerId = @mid
+            ORDER BY m.ModelName;"
+
+            Using cmd As New SqlCommand(sql, conn)
+                cmd.Parameters.Add("@sid", SqlDbType.Int).Value = seriesId
+                cmd.Parameters.Add("@mid", SqlDbType.Int).Value = manufacturerId
+
+                Using da As New SqlDataAdapter(cmd)
+                    da.Fill(dt)
+                End Using
+            End Using
+        End Using
+
+        Return dt
+    End Function
+    '==============================================================================
+    ' Function: SafeField
+    ' Form: frmAddModelInformation
+    ' Purpose:
+    '   Pull a single string value from the first row of a DataTable if present.
+    '------------------------------------------------------------------------------
+    Private Function SafeField(dt As DataTable, colName As String) As String
+        If dt Is Nothing OrElse dt.Rows.Count = 0 Then Return ""
+        If Not dt.Columns.Contains(colName) Then Return ""
+        Dim v = dt.Rows(0)(colName)
+        If v Is Nothing OrElse v Is DBNull.Value Then Return ""
+        Return v.ToString().Trim()
+    End Function
 
 End Class
 

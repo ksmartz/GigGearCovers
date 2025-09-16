@@ -1,6 +1,6 @@
 ﻿{
     "database":  "GigGearCoversDb",
-    "generatedOn":  "2025-09-12T22:58:01",
+    "generatedOn":  "2025-09-15T22:26:52",
     "tables":  [
                    {
                        "name":  "AmpHandleLocation",
@@ -1008,7 +1008,7 @@
                                            "ComputedDefinition":  null
                                        },
                                        {
-                                           "ColumnName":  "FabricType",
+                                           "ColumnName":  "FabricTypeName",
                                            "DataType":  "nvarchar",
                                            "MaxLength":  200,
                                            "IsNullable":  false,
@@ -1031,7 +1031,7 @@
                                                "ReferencedColumn":  null
                                            },
                                            {
-                                               "ColumnName":  "FabricType",
+                                               "ColumnName":  "FabricTypeName",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            },
@@ -5616,7 +5616,7 @@
                        "name":  "MpWooProduct",
                        "columns":  [
                                        {
-                                           "ColumnName":  "PK_MpWooProduct",
+                                           "ColumnName":  "PK_MpWooProductId",
                                            "DataType":  "int",
                                            "MaxLength":  4,
                                            "IsNullable":  false,
@@ -5702,11 +5702,99 @@
                                            "IsNullable":  false,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "WooCategoryId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "SyncStatus",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  64,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastMessage",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  8000,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "CreatedAtUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "UpdatedAtUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Message",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  800,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "CreatedUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  7,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "UpdatedUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  7,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastSyncStatus",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  128,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastSyncNote",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  8000,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastSyncedOn",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  7,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
                                        }
                                    ],
                        "foreignKeys":  [
                                            {
-                                               "ColumnName":  "PK_MpWooProduct",
+                                               "ColumnName":  "PK_MpWooProductId",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            },
@@ -5757,6 +5845,61 @@
                                            },
                                            {
                                                "ColumnName":  "DateModified",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "WooCategoryId",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "SyncStatus",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastMessage",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "CreatedAtUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "UpdatedAtUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Message",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "CreatedUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "UpdatedUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastSyncStatus",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastSyncNote",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastSyncedOn",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            }
@@ -5848,7 +5991,7 @@
                                        {
                                            "ColumnName":  "RefSKU",
                                            "DataType":  "nvarchar",
-                                           "MaxLength":  128,
+                                           "MaxLength":  380,
                                            "IsNullable":  true,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
@@ -6007,7 +6150,7 @@
                        "name":  "MpWooVariation",
                        "columns":  [
                                        {
-                                           "ColumnName":  "PK_MpWooVariation",
+                                           "ColumnName":  "PK_MpWooVariationId",
                                            "DataType":  "int",
                                            "MaxLength":  4,
                                            "IsNullable":  false,
@@ -6018,7 +6161,7 @@
                                            "ColumnName":  "FK_ModelId",
                                            "DataType":  "int",
                                            "MaxLength":  4,
-                                           "IsNullable":  false,
+                                           "IsNullable":  true,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
                                        },
@@ -6026,7 +6169,7 @@
                                            "ColumnName":  "FK_FabricTypeNameId",
                                            "DataType":  "int",
                                            "MaxLength":  4,
-                                           "IsNullable":  false,
+                                           "IsNullable":  true,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
                                        },
@@ -6034,7 +6177,7 @@
                                            "ColumnName":  "FK_ColorNameId",
                                            "DataType":  "int",
                                            "MaxLength":  4,
-                                           "IsNullable":  false,
+                                           "IsNullable":  true,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
                                        },
@@ -6101,11 +6244,147 @@
                                            "IsNullable":  false,
                                            "IsComputed":  false,
                                            "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "SyncStatus",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  64,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastMessage",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  8000,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "CreatedAtUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "UpdatedAtUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  6,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FK_MpWooProductId",
+                                           "DataType":  "int",
+                                           "MaxLength":  4,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ChildSKU",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  256,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FabricOptionName",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ColorOptionName",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Status",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  128,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "Message",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  800,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "CreatedUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  7,
+                                           "IsNullable":  false,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "UpdatedUtc",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  7,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "FabricOption",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "ColorOption",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  400,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastSyncStatus",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  128,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastSyncNote",
+                                           "DataType":  "nvarchar",
+                                           "MaxLength":  8000,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
+                                       },
+                                       {
+                                           "ColumnName":  "LastSyncedOn",
+                                           "DataType":  "datetime2",
+                                           "MaxLength":  7,
+                                           "IsNullable":  true,
+                                           "IsComputed":  false,
+                                           "ComputedDefinition":  null
                                        }
                                    ],
                        "foreignKeys":  [
                                            {
-                                               "ColumnName":  "PK_MpWooVariation",
+                                               "ColumnName":  "PK_MpWooVariationId",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            },
@@ -6161,6 +6440,91 @@
                                            },
                                            {
                                                "ColumnName":  "DateModified",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "SyncStatus",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastMessage",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "CreatedAtUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "UpdatedAtUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FK_MpWooProductId",
+                                               "ReferencedTable":  "MpWooProduct",
+                                               "ReferencedColumn":  "PK_MpWooProductId"
+                                           },
+                                           {
+                                               "ColumnName":  "ChildSKU",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FabricOptionName",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ColorOptionName",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Status",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "Message",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "CreatedUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "UpdatedUtc",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "FabricOption",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "ColorOption",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastSyncStatus",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastSyncNote",
+                                               "ReferencedTable":  null,
+                                               "ReferencedColumn":  null
+                                           },
+                                           {
+                                               "ColumnName":  "LastSyncedOn",
                                                "ReferencedTable":  null,
                                                "ReferencedColumn":  null
                                            }

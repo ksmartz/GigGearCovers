@@ -1,14 +1,81 @@
 ﻿Option Strict On
 Option Explicit On
-Imports System.Data
-
 Imports System
+Imports System.Data
+Imports System.Data.SqlClient
 Imports System.Diagnostics
 Imports System.IO
 Imports System.Text
 Imports System.Text.RegularExpressions
 Module HelperFunctions
 
+    '------------------------------------------------------------------------------
+    ' Sub: EnsureSeriesIdColumn
+    ' Purpose : Add/align a "PK_SeriesID" Integer column on a DataTable used by the grid.
+    '           Copies values from FK_SeriesId or SeriesId if present; otherwise, fills via DB lookup by PK_ModelId.
+    ' Depends : DbConnectionManager; the table must contain PK_ModelId for fallback lookups.
+    ' Date    : 2025-09-15
+    '------------------------------------------------------------------------------
+    Private Sub EnsureSeriesIdColumn(models As DataTable)
+        If models Is Nothing Then Exit Sub
+
+        Dim hasPk As Boolean = models.Columns.Contains("PK_SeriesID")
+        Dim hasFk As Boolean = models.Columns.Contains("FK_SeriesId")
+        Dim hasPlain As Boolean = models.Columns.Contains("SeriesId")
+
+        If Not hasPk Then
+            models.Columns.Add(New DataColumn("PK_SeriesID", GetType(Integer)))
+        End If
+
+        For Each r As DataRow In models.Rows
+            If r.RowState = DataRowState.Deleted Then Continue For
+
+            Dim sid As Integer = 0
+            Dim val As Object = If(hasPk, r("PK_SeriesID"), Nothing)
+
+            If val IsNot Nothing AndAlso val IsNot DBNull.Value AndAlso Integer.TryParse(val.ToString(), sid) AndAlso sid > 0 Then
+                ' already populated
+                Continue For
+            End If
+
+            If hasFk AndAlso r("FK_SeriesId") IsNot DBNull.Value AndAlso Integer.TryParse(r("FK_SeriesId").ToString(), sid) AndAlso sid > 0 Then
+                r("PK_SeriesID") = sid
+                Continue For
+            End If
+
+            If hasPlain AndAlso r("SeriesId") IsNot DBNull.Value AndAlso Integer.TryParse(r("SeriesId").ToString(), sid) AndAlso sid > 0 Then
+                r("PK_SeriesID") = sid
+                Continue For
+            End If
+
+            ' Fallback: DB lookup via PK_ModelId
+            Dim mid As Integer = 0
+            If models.Columns.Contains("PK_ModelId") AndAlso r("PK_ModelId") IsNot DBNull.Value Then
+                Integer.TryParse(r("PK_ModelId").ToString(), mid)
+            End If
+            If mid <= 0 Then Continue For
+
+            Using conn As SqlConnection = DbConnectionManager.GetConnection()
+                DbConnectionManager.EnsureOpen(conn)
+                Using cmd As New SqlCommand("
+                    SELECT TOP (1) s.PK_SeriesId
+                    FROM Models m
+                    INNER JOIN Series s ON s.PK_SeriesId = m.FK_SeriesId
+                    WHERE m.PK_ModelId = @ModelId;", conn)
+
+                        cmd.Parameters.AddWithValue("@ModelId", mid)
+                        Dim o = cmd.ExecuteScalar()
+                        If o IsNot Nothing AndAlso o IsNot DBNull.Value Then
+                            Dim looked As Integer
+                            If Integer.TryParse(o.ToString(), looked) AndAlso looked > 0 Then
+                                r("PK_SeriesID") = looked
+                            End If
+                        End If
+                    End Using
+                End Using
+
+        Next
+    End Sub
 
 
     Public Function CalculateRetailPrice(grandTotal As Decimal, profit As Decimal) As Decimal
