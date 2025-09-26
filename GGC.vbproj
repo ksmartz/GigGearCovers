@@ -49,7 +49,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>GGC.frmDashboard</StartupObject>
+    <StartupObject>GGC.formListings</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.8, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -114,37 +114,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CodeExporter.vb" />
-    <Compile Include="Forms\frmAddModelInformation.Designer.vb">
-      <DependentUpon>frmAddModelInformation.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\frmAddModelInformation.vb">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Data\DbConnectionManager.vb" />
     <Compile Include="DesignFeature.vb" />
-    <Compile Include="Forms\frmDashboard.Designer.vb">
-      <DependentUpon>frmDashboard.vb</DependentUpon>
+    <Compile Include="Forms\formListings.Designer.vb">
+      <DependentUpon>formListings.vb</DependentUpon>
     </Compile>
-    <Compile Include="Forms\frmDashboard.vb">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\frmFabricEntryForm.Designer.vb">
-      <DependentUpon>frmFabricEntryForm.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\frmFabricEntryForm.vb">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\frmSuppliers.Designer.vb">
-      <DependentUpon>frmSuppliers.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\frmSuppliers.vb">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="frmPublishProgress.vb">
+    <Compile Include="Forms\formListings.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="GitHubLinkHelpers.vb" />
-    <Compile Include="HelperFunctions.vb" />
     <Compile Include="ModelCostUpdateResults.vb" />
     <Compile Include="ModelDesignFeatures.vb" />
     <Compile Include="ModelManufacturers.vb" />
@@ -156,8 +134,6 @@
     <Compile Include="Models\FabricTypeName.vb" />
     <Compile Include="Models\SupplierInformation.vb" />
     <Compile Include="Models\SupplierProductNameData.vb" />
-    <Compile Include="MpWooAttribute.vb" />
-    <Compile Include="MpWooCommerceProduct.vb" />
     <Compile Include="Forms\MpListingsPreview.Designer.vb">
       <DependentUpon>MpListingsPreview.vb</DependentUpon>
     </Compile>
@@ -184,23 +160,12 @@
     <Compile Include="Program.vb" />
     <Compile Include="ModelSeries.vb" />
     <Compile Include="ModelSkuBuilder.vb" />
-    <Compile Include="WooCommerceAPI.vb" />
-    <Compile Include="WooCommerceCSVGenerator.vb" />
-    <Compile Include="WooVariationPublisher.vb" />
+    <Compile Include="ReverbCode\ReverbApiClient.vb" />
+    <Compile Include="ReverbCode\ReverbListingModel.vb" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Forms\frmAddModelInformation.resx">
-      <DependentUpon>frmAddModelInformation.vb</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\frmDashboard.resx">
-      <DependentUpon>frmDashboard.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\frmFabricEntryForm.resx">
-      <DependentUpon>frmFabricEntryForm.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\frmSuppliers.resx">
-      <DependentUpon>frmSuppliers.vb</DependentUpon>
+    <EmbeddedResource Include="Forms\formListings.resx">
+      <DependentUpon>formListings.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\MpListingsPreview.resx">
       <DependentUpon>MpListingsPreview.vb</DependentUpon>
@@ -214,6 +179,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="Forms\formListings.vb, lines 120–140" />
+    <None Include="Forms\formListings.vb, lines 210-225" />
     <None Include="My Project\Application.myapp">
       <Generator>MyApplicationCodeGenerator</Generator>
       <LastGenOutput>Application.Designer.vb</LastGenOutput>

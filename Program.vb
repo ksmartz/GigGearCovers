@@ -6,7 +6,7 @@ Module Program
 
         Application.EnableVisualStyles()
         Application.SetCompatibleTextRenderingDefault(False)
-        Application.Run(New frmDashboard())
+        Application.Run(New formListings())
 
     End Sub
 

@@ -24,7 +24,7 @@ Partial Class MpListingsPreview
     Private Sub InitializeComponent()
         Me.lblWooSampleTitle = New System.Windows.Forms.Label()
         Me.wbWooLongDescriptionPreview = New System.Windows.Forms.WebBrowser()
-        Me.txtWooLongDescriptionPreview = New System.Windows.Forms.TextBox()
+        Me.txtReverbPreview = New System.Windows.Forms.TextBox()
         Me.lblWooTitle = New System.Windows.Forms.Label()
         Me.lblWooLongDescriptionSample = New System.Windows.Forms.Label()
         Me.SuspendLayout()
@@ -46,14 +46,14 @@ Partial Class MpListingsPreview
         Me.wbWooLongDescriptionPreview.Size = New System.Drawing.Size(948, 678)
         Me.wbWooLongDescriptionPreview.TabIndex = 1
         '
-        'txtWooLongDescriptionPreview
+        'txtReverbPreview
         '
-        Me.txtWooLongDescriptionPreview.Location = New System.Drawing.Point(12, 132)
-        Me.txtWooLongDescriptionPreview.MaximumSize = New System.Drawing.Size(800, 800)
-        Me.txtWooLongDescriptionPreview.Multiline = True
-        Me.txtWooLongDescriptionPreview.Name = "txtWooLongDescriptionPreview"
-        Me.txtWooLongDescriptionPreview.Size = New System.Drawing.Size(800, 685)
-        Me.txtWooLongDescriptionPreview.TabIndex = 2
+        Me.txtReverbPreview.Location = New System.Drawing.Point(12, 132)
+        Me.txtReverbPreview.MaximumSize = New System.Drawing.Size(800, 800)
+        Me.txtReverbPreview.Multiline = True
+        Me.txtReverbPreview.Name = "txtReverbPreview"
+        Me.txtReverbPreview.Size = New System.Drawing.Size(800, 685)
+        Me.txtReverbPreview.TabIndex = 2
         '
         'lblWooTitle
         '
@@ -82,7 +82,7 @@ Partial Class MpListingsPreview
         Me.ClientSize = New System.Drawing.Size(2172, 1146)
         Me.Controls.Add(Me.lblWooLongDescriptionSample)
         Me.Controls.Add(Me.lblWooTitle)
-        Me.Controls.Add(Me.txtWooLongDescriptionPreview)
+        Me.Controls.Add(Me.txtReverbPreview)
         Me.Controls.Add(Me.wbWooLongDescriptionPreview)
         Me.Controls.Add(Me.lblWooSampleTitle)
         Me.Name = "MpListingsPreview"
@@ -94,7 +94,7 @@ Partial Class MpListingsPreview
 
     Friend WithEvents lblWooSampleTitle As Windows.Forms.Label
     Friend WithEvents wbWooLongDescriptionPreview As Windows.Forms.WebBrowser
-    Friend WithEvents txtWooLongDescriptionPreview As Windows.Forms.TextBox
+    Friend WithEvents txtReverbPreview As Windows.Forms.TextBox
     Friend WithEvents lblWooTitle As Windows.Forms.Label
     Friend WithEvents lblWooLongDescriptionSample As Windows.Forms.Label
 End Class
