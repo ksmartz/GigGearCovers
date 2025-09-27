@@ -1,62 +1,58 @@
 ﻿' Purpose: Shows a preview of a Reverb listing in txtReverbPreview and returns DialogResult.
 ' Dependencies: Imports Newtonsoft.Json, ReverbListing, System.Windows.Forms
-' Current date: 2025-09-25
+' Current date: 2025-09-26
 
 Imports Newtonsoft.Json
-Imports System.Windows.Forms ' >>> required for IWin32Window and DialogResult
+Imports System.Windows.Forms
+Imports ReverbCode.ReverbListingModel
 
 Public Class MpListingsPreview
-    ' >>> changed
-    ''' <summary>
-    ''' Shows the preview form for a given ReverbListing.
-    ''' </summary>
-    ''' <param name="listing">The ReverbListing to preview.</param>
-    ''' <returns>DialogResult.OK if user confirms, DialogResult.Cancel otherwise.</returns>
-    Public Function ShowReverbListingPreview(listing As ReverbListing, owner As IWin32Window) As DialogResult
-        ' Format the listing as indented JSON for clarity
-        txtReverbPreview.Text = JsonConvert.SerializeObject(listing, Formatting.Indented)
-        Return Me.ShowDialog(owner)
-    End Function
+    Inherits Form
 
+    ' >>> changed
+    ' Holds the listing passed to the preview form
+    Private _listing As ReverbListing
+    ' <<< end changed
+
+    ' Purpose: Constructor that accepts a ReverbListing and stores it for use in the form.
+    ' Dependencies: Imports ReverbCode.ReverbListingModel
+    ' Current date: 2025-09-26
     Public Sub New(listing As ReverbListing)
         InitializeComponent()
-        ' Show the ReverbListing as indented JSON in the preview textbox
-        If listing IsNot Nothing Then
-            txtReverbPreview.Text = JsonConvert.SerializeObject(listing, Formatting.Indented)
-        Else
-            txtReverbPreview.Text = "No listing data available."
-        End If
+        ' >>> changed
+        _listing = listing
+        ' <<< end changed
+        PopulateDescriptionPreview(_listing)
     End Sub
 
-    ' <<< end changed
-    Private Sub frmWooSampleProductPreview_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-
-
+    Private Sub PopulateDescriptionPreview(listing As ReverbListing)
+        Try
+            ' >>> changed
+            ' Build a full preview of all listing fields
+            Dim previewText As New System.Text.StringBuilder()
+            previewText.AppendLine($"Title: {listing.Title}")
+            previewText.AppendLine($"Condition: {listing.Condition}")
+            previewText.AppendLine($"Inventory: {listing.Inventory}")
+            previewText.AppendLine($"SKU: {listing.Sku}")
+            previewText.AppendLine($"Make: {listing.Make}")
+            previewText.AppendLine($"Model: {listing.Model}")
+            previewText.AppendLine($"Price: {listing.Price:C2}")
+            previewText.AppendLine($"Product Type: {listing.ProductType}")
+            previewText.AppendLine($"Subcategory 1: {listing.Subcategory1}")
+            previewText.AppendLine($"Offers Enabled: {listing.OffersEnabled}")
+            previewText.AppendLine($"Local Pickup: {listing.LocalPickup}")
+            previewText.AppendLine($"Shipping Profile Name: {listing.ShippingProfileName}")
+            previewText.AppendLine($"UPC Does Not Apply: {listing.UpcDoesNotApply}")
+            previewText.AppendLine($"Country Of Origin: {listing.CountryOfOrigin}")
+            previewText.AppendLine("Description:")
+            previewText.AppendLine(listing.Description)
+            txtDescriptionPreview.Text = previewText.ToString()
+            ' <<< end changed
+        Catch ex As Exception
+            MessageBox.Show("Error displaying description preview: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
     End Sub
-
-
-
-
-
-
-
-    '*****************************************************************************************************************************************************************
-#Region "*************START*************DISPLAY PRODUCT LISTING SAMPLES********************************************************************************************"
-    '*****************************************************************************************************************************************************************
-#Region "Sample Product Listing Display"
-
-    Public Sub SetWooProductInfo(wooTitle As String, wooLongDescription As String)
-        lblWooSampleTitle.Text = wooTitle
-        txtReverbPreview.Text = wooLongDescription
-        wbWooLongDescriptionPreview.DocumentText = wooLongDescription
-    End Sub
-
-    Private Sub txtWooLongDescriptionPreview_TextChanged(sender As Object, e As EventArgs) Handles txtReverbPreview.TextChanged
-
-    End Sub
-
-#End Region
-
-
-#End Region '---------END---------------BUTTON EVENT HANDLERS---------------------------------------------------------------------------------------------------------
 End Class
+
+
+

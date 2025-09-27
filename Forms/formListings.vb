@@ -1,9 +1,12 @@
-﻿Imports System.Data.SqlClient
+﻿Imports System.Collections.Generic
+Imports System.Data.SqlClient
+Imports System.Text.RegularExpressions
 Imports System.Windows.Forms
+Imports ReverbCode.ReverbListingModel
 
 Public Class formListings
     Private isLoading As Boolean = False
-
+    Private checkedListMarketplaces As CheckedListBox
     Private Sub formListings_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         isLoading = True
         Try
@@ -22,10 +25,237 @@ Public Class formListings
             isLoading = False
         End Try
     End Sub
+    Public Sub New()
+        ' This call is required by the designer.
+        InitializeComponent()
 
-    ' Purpose: Loads all series for the selected manufacturer, including FK_equipmentTypeId, and binds to cmbSeriesName.
-    ' Dependencies: Imports System.Data.SqlClient, DbConnectionManager
-    ' Current date: 2025-09-25
+        ' >>> changed
+        ' Create and configure the CheckedListBox
+        checkedListMarketplaces = New CheckedListBox() With {
+            .Name = "checkedListMarketplaces",
+            .Location = New Drawing.Point(20, 20),
+            .Size = New Drawing.Size(200, 140),
+            .CheckOnClick = True
+        }
+
+        ' Add marketplace items
+        checkedListMarketplaces.Items.Add("Reverb")
+        checkedListMarketplaces.Items.Add("eBay")
+        checkedListMarketplaces.Items.Add("Amazon")
+        checkedListMarketplaces.Items.Add("Website")
+        checkedListMarketplaces.Items.Add("Etsy")
+        checkedListMarketplaces.Items.Add("Walmart")
+        checkedListMarketplaces.Items.Add("All Marketplaces")
+
+        ' Add the CheckedListBox to the form
+        Me.Controls.Add(checkedListMarketplaces)
+        ' <<< end changed
+    End Sub
+    ' >>> changed
+    Public Shared Sub UseReverbListingFieldValues(myReverbListing As ReverbListing)
+        Try
+            ' Get the dictionary of field names and values from the read-only property
+            Dim fieldDict As Dictionary(Of String, Object) = myReverbListing.FieldNameValues
+
+            ' Example: Access the "Title" value
+            Dim titleValue As String = fieldDict("Title").ToString()
+
+            ' Example: Output all field names and values
+            For Each kvp As KeyValuePair(Of String, Object) In fieldDict
+                Console.WriteLine($"{kvp.Key}: {kvp.Value}")
+            Next
+        Catch ex As Exception
+            ' Handle any errors gracefully
+            Console.WriteLine("Error accessing ReverbListing field values: " & ex.Message)
+        End Try
+    End Sub
+
+
+    ''' <summary>
+    ''' Builds a listing description by replacing single-brace placeholders and expressions with correct pricing and design feature values.
+    ''' Purpose: Handles {BASERETAILPRICE_CHOICE}, {POCKET}, {ZIPPERHANDLE}, and expressions like {BASERETAILPRICE_CHOICE + POCKET + ZIPPERHANDLE}, including "W/ PADDING" variants.
+    ''' Dependencies: Imports System.Data.SqlClient, Imports System.Text.RegularExpressions, DbConnectionManager
+    ''' Current date: 2025-09-26
+    ''' </summary>
+    Public Shared Function BuildListingDescription(descriptionTemplate As String, modelId As Integer, marketplaceName As String, equipmentTypeId As Integer, manufacturerName As String, seriesName As String, modelName As String, equipmentTypeName As String) As String
+        ' Map marketplaceName to correct column suffix
+        Dim priceSuffix As String = ""
+        Select Case marketplaceName.ToLowerInvariant()
+            Case "reverb"
+                priceSuffix = "_Reverb"
+            Case "amazon"
+                priceSuffix = "_Amazon"
+            Case "ebay"
+                priceSuffix = "_eBay"
+            Case "etsy"
+                priceSuffix = "_Etsy"
+            Case Else
+                priceSuffix = "_Reverb" ' Default to Reverb
+        End Select
+        MsgBox(descriptionTemplate)
+        ' Strongly-typed variables for price values
+        Dim baseRetailPriceChoice As Decimal = 0D
+        Dim baseRetailPriceChoicePadded As Decimal = 0D
+        Dim baseRetailPriceSyntheticLeather As Decimal = 0D
+        Dim baseRetailPriceSyntheticLeatherPadded As Decimal = 0D
+
+        ' Arrays for design feature names and prices
+        Dim featureNames() As String = {"ZIPPERHANDLE", "POCKET"}
+        Dim featurePrices(1) As Decimal
+
+        Try
+            Using conn = DbConnectionManager.CreateOpenConnection()
+                ' Get latest pricing for the model
+                Dim priceSql As String = $"
+            SELECT TOP 1
+                RetailPrice_Choice{priceSuffix},
+                RetailPrice_ChoicePadded{priceSuffix},
+                RetailPrice_Leather{priceSuffix},
+                RetailPrice_LeatherPadded{priceSuffix}
+            FROM ModelHistoryCostRetailPricing
+            WHERE FK_ModelId = @ModelId
+            ORDER BY DateCalculated DESC"
+                Using cmd As New SqlCommand(priceSql, conn)
+                    cmd.Parameters.AddWithValue("@ModelId", modelId)
+                    Using reader = cmd.ExecuteReader()
+                        If reader.Read() Then
+                            baseRetailPriceChoice = If(IsDBNull(reader(0)), 0D, Convert.ToDecimal(reader(0)))
+                            baseRetailPriceChoicePadded = If(IsDBNull(reader(1)), 0D, Convert.ToDecimal(reader(1)))
+                            baseRetailPriceSyntheticLeather = If(IsDBNull(reader(2)), 0D, Convert.ToDecimal(reader(2)))
+                            baseRetailPriceSyntheticLeatherPadded = If(IsDBNull(reader(3)), 0D, Convert.ToDecimal(reader(3)))
+                        End If
+                    End Using
+                End Using
+
+                ' Get design feature prices for current equipment type
+                Dim featureSql As String = "
+            SELECT DesignFeaturesName, AddedPrice
+            FROM ModelDesignFeatures
+            WHERE FK_EquipmentTypeId = @EquipmentTypeId"
+                Using cmd As New SqlCommand(featureSql, conn)
+                    cmd.Parameters.AddWithValue("@EquipmentTypeId", equipmentTypeId)
+                    Using reader = cmd.ExecuteReader()
+                        While reader.Read()
+                            Dim name As String = reader("DesignFeaturesName").ToString().Trim().ToUpperInvariant()
+                            Dim price As Decimal = If(IsDBNull(reader("AddedPrice")), 0D, Convert.ToDecimal(reader("AddedPrice")))
+                            For i As Integer = 0 To featureNames.Length - 1
+                                If name = featureNames(i) Then
+                                    featurePrices(i) = price
+                                End If
+                            Next
+                        End While
+                    End Using
+                End Using
+            End Using
+
+            ' >>> changed
+            ' Normalize double braces to single braces for all templates
+            descriptionTemplate = Regex.Replace(descriptionTemplate, "\{\{([^\}]+)\}\}", "{$1}")
+
+            Dim result As String = descriptionTemplate
+            Dim exprPattern As String = "\{([^\}]+)\}"
+            result = Regex.Replace(result, exprPattern, Function(m)
+                                                            Dim expr As String = m.Groups(1).Value
+                                                            Dim sum As Decimal = 0D
+                                                            Dim isSum As Boolean = False
+                                                            Dim parts = expr.Split({"+"}, StringSplitOptions.RemoveEmptyEntries)
+                                                            For Each part In parts
+                                                                Dim trimmed = part.Trim()
+                                                                If trimmed.ToUpperInvariant().Contains("W/ PADDING") Then
+                                                                    trimmed = Regex.Replace(trimmed, "w/ padding", "W/ PADDING", RegexOptions.IgnoreCase)
+                                                                End If
+                                                                Select Case True
+                                                                    Case String.Equals(trimmed, "MANUFACTURER_NAME", StringComparison.OrdinalIgnoreCase)
+                                                                        If parts.Length = 1 Then Return manufacturerName
+                                                                    Case String.Equals(trimmed, "SERIES_NAME", StringComparison.OrdinalIgnoreCase)
+                                                                        If parts.Length = 1 Then Return seriesName
+                                                                    Case String.Equals(trimmed, "MODEL_NAME", StringComparison.OrdinalIgnoreCase)
+                                                                        If parts.Length = 1 Then Return modelName
+                                                                    Case String.Equals(trimmed, "EQUIPMENT_TYPE", StringComparison.OrdinalIgnoreCase)
+                                                                        If parts.Length = 1 Then Return equipmentTypeName
+                                                                    Case String.Equals(trimmed, "BASERETAILPRICE_CHOICE", StringComparison.OrdinalIgnoreCase)
+                                                                        sum += baseRetailPriceChoice
+                                                                        isSum = True
+                                                                    Case String.Equals(trimmed, "BASERETAILPRICE_CHOICE W/ PADDING", StringComparison.OrdinalIgnoreCase)
+                                                                        sum += baseRetailPriceChoicePadded
+                                                                        isSum = True
+                                                                    Case String.Equals(trimmed, "BASERETAILPRICE_SYNTHETICLEATHER", StringComparison.OrdinalIgnoreCase)
+                                                                        sum += baseRetailPriceSyntheticLeather
+                                                                        isSum = True
+                                                                    Case String.Equals(trimmed, "BASERETAILPRICE_SYNTHETICLEATHER W/ PADDING", StringComparison.OrdinalIgnoreCase)
+                                                                        sum += baseRetailPriceSyntheticLeatherPadded
+                                                                        isSum = True
+                                                                    Case String.Equals(trimmed, "ZIPPERHANDLE", StringComparison.OrdinalIgnoreCase)
+                                                                        sum += featurePrices(0)
+                                                                        isSum = True
+                                                                    Case String.Equals(trimmed, "POCKET", StringComparison.OrdinalIgnoreCase)
+                                                                        sum += featurePrices(1)
+                                                                        isSum = True
+                                                                End Select
+                                                            Next
+                                                            If isSum Then
+                                                                Return sum.ToString("C2")
+                                                            Else
+                                                                Return m.Value
+                                                            End If
+                                                        End Function)
+            ' <<< end changed
+
+            Return result
+        Catch ex As Exception
+            Return $"Error building description: {ex.Message}"
+        End Try
+    End Function
+    ' Purpose: Retrieves the PK_marketplaceNameId for each selected marketplace in checkedListMarketplaces.
+    '          If "All Marketplaces" is selected, returns all marketplace IDs from the database.
+    ' Dependencies: Imports System.Data.SqlClient, System.Collections.Generic
+    ' Current date: 2025-09-26
+
+    Private Function GetSelectedMarketplaceIds() As List(Of Integer)
+        ' >>> changed
+        Dim selectedIds As New List(Of Integer)()
+        Try
+            ' Gather selected marketplace names
+            Dim selectedNames As New List(Of String)()
+            For i As Integer = 0 To checkedListMarketplaces.CheckedItems.Count - 1
+                selectedNames.Add(checkedListMarketplaces.CheckedItems(i).ToString())
+            Next
+
+            ' If "All Marketplaces" is selected, fetch all IDs from the database
+            If selectedNames.Contains("All Marketplaces") Then
+                Using conn = DbConnectionManager.CreateOpenConnection()
+                    Dim sql As String = "SELECT PK_marketplaceNameId FROM MpName"
+                    Using cmd As New SqlCommand(sql, conn)
+                        Using reader = cmd.ExecuteReader()
+                            While reader.Read()
+                                selectedIds.Add(Convert.ToInt32(reader("PK_marketplaceNameId")))
+                            End While
+                        End Using
+                    End Using
+                End Using
+            Else
+                ' Otherwise, fetch IDs for each selected marketplace name
+                Using conn = DbConnectionManager.CreateOpenConnection()
+                    For Each marketplaceName In selectedNames
+                        If marketplaceName <> "All Marketplaces" Then
+                            Dim sql As String = "SELECT PK_marketplaceNameId FROM MpName WHERE marketplaceName = @marketplaceName"
+                            Using cmd As New SqlCommand(sql, conn)
+                                cmd.Parameters.AddWithValue("@marketplaceName", marketplaceName)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    selectedIds.Add(Convert.ToInt32(result))
+                                End If
+                            End Using
+                        End If
+                    Next
+                End Using
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error retrieving selected marketplace IDs: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+        Return selectedIds
+        ' <<< end changed
+    End Function
     Private Sub cmbManufacturerName_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbManufacturerName.SelectedIndexChanged
         ' >>> changed
         If cmbManufacturerName.SelectedIndex = -1 OrElse cmbManufacturerName.SelectedValue Is Nothing Then
@@ -69,33 +299,65 @@ Public Class formListings
     ' Current date: 2025-09-25
     Private currentEquipmentTypeId As Integer = 0 ' >>> changed
 
+    ''' <summary>
+    ''' Handles selection change for series combo box. Loads all models for the selected series and their latest pricing info into dgvListingInformation.
+    ''' Purpose: Loads manufacturer, equipment type, series, and latest pricing for all models in the selected series.
+    ''' Dependencies: Imports System.Data.SqlClient, DbConnectionManager, System.Windows.Forms
+    ''' Current date: 2025-09-26
+    ''' </summary>
     Private Sub cmbSeriesName_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbSeriesName.SelectedIndexChanged
-        ' >>> changed
         ' Only proceed if a series is selected
         If cmbSeriesName.SelectedIndex = -1 OrElse cmbSeriesName.SelectedValue Is Nothing Then
             dgvListingInformation.DataSource = Nothing
             currentEquipmentTypeId = 0 ' Clear equipmentTypeId if nothing selected
+            lblEquipmentType.Text = "" ' Clear label if nothing selected
             Return
         End If
 
         ' Get equipmentTypeId from the selected series
         Dim drv As DataRowView = TryCast(cmbSeriesName.SelectedItem, DataRowView)
         If drv IsNot Nothing AndAlso Not IsDBNull(drv("FK_equipmentTypeId")) Then
-            currentEquipmentTypeId = Convert.ToInt32(drv("FK_equipmentTypeId")) ' >>> changed
+            currentEquipmentTypeId = Convert.ToInt32(drv("FK_equipmentTypeId"))
         Else
             currentEquipmentTypeId = 0
         End If
 
+        ' Update lblEquipmentType with the equipment type name using DbConnectionManager
+        Try
+            If currentEquipmentTypeId <> 0 Then
+                Using conn = DbConnectionManager.CreateOpenConnection()
+                    Dim sqlType As String = "SELECT equipmentTypeName FROM ModelEquipmentTypes WHERE PK_equipmentTypeId = @EquipmentTypeId"
+                    Using cmdType As New SqlCommand(sqlType, conn)
+                        cmdType.Parameters.AddWithValue("@EquipmentTypeId", currentEquipmentTypeId)
+                        Dim typeResult = cmdType.ExecuteScalar()
+                        If typeResult IsNot Nothing AndAlso Not IsDBNull(typeResult) Then
+                            lblEquipmentType.Text = typeResult.ToString()
+                        Else
+                            lblEquipmentType.Text = "(Unknown Type)"
+                        End If
+                    End Using
+                End Using
+            Else
+                lblEquipmentType.Text = "(Unknown Type)"
+            End If
+        Catch ex As Exception
+            lblEquipmentType.Text = "(Error)"
+            MessageBox.Show("Error retrieving equipment type name: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+
+        ' Load all models for the selected series using DbConnectionManager
         Try
             Using conn = DbConnectionManager.CreateOpenConnection()
-                ' Query: Get all models for the selected series, their equipment type, latest pricing, and parentsku
+                ' >>> changed
+                ' Only include the columns you requested in the SELECT statement.
                 Dim sql As String =
 "SELECT 
     mfr.ManufacturerName,
     et.equipmentTypeName,
-    s.seriesName,
-    mo.modelName,
-    mo.parentsku, -- Added parentsku column
+    s.SeriesName,
+    mo.ModelName,
+    mo.parentSku, -- <<< added
+    mo.PK_ModelId AS ModelId, -- >>> added, ensures modelId is available
     pr.RetailPrice_Choice_Amazon,
     pr.RetailPrice_ChoicePadded_Amazon,
     pr.RetailPrice_Leather_Amazon,
@@ -113,17 +375,34 @@ Public Class formListings
     pr.RetailPrice_Leather_Etsy,
     pr.RetailPrice_LeatherPadded_Etsy
 FROM ModelSeries s
-INNER JOIN ModelManufacturers mfr ON s.FK_manufacturerId = mfr.PK_ManufacturerId
-INNER JOIN model mo ON mo.FK_seriesId = s.PK_seriesId
+INNER JOIN ModelManufacturers mfr ON s.FK_ManufacturerId = mfr.PK_ManufacturerId
+INNER JOIN Model mo ON mo.FK_SeriesId = s.PK_SeriesId
 INNER JOIN ModelEquipmentTypes et ON s.FK_equipmentTypeId = et.PK_equipmentTypeId
 OUTER APPLY (
-    SELECT TOP 1 *
+    SELECT TOP 1
+        RetailPrice_Choice_Amazon,
+        RetailPrice_ChoicePadded_Amazon,
+        RetailPrice_Leather_Amazon,
+        RetailPrice_LeatherPadded_Amazon,
+        RetailPrice_Choice_Reverb,
+        RetailPrice_ChoicePadded_Reverb,
+        RetailPrice_Leather_Reverb,
+        RetailPrice_LeatherPadded_Reverb,
+        RetailPrice_Choice_eBay,
+        RetailPrice_ChoicePadded_eBay,
+        RetailPrice_Leather_eBay,
+        RetailPrice_LeatherPadded_eBay,
+        RetailPrice_Choice_Etsy,
+        RetailPrice_ChoicePadded_Etsy,
+        RetailPrice_Leather_Etsy,
+        RetailPrice_LeatherPadded_Etsy
     FROM ModelHistoryCostRetailPricing pr
-    WHERE pr.FK_ModelId = mo.PK_modelId
+    WHERE pr.FK_ModelId = mo.PK_ModelId
     ORDER BY pr.DateCalculated DESC
 ) pr
-WHERE s.PK_seriesId = @SeriesId
-ORDER BY mo.modelName"
+WHERE s.PK_SeriesId = @SeriesId
+ORDER BY mo.ModelName"
+                ' <<< end changed
                 Using cmd As New SqlCommand(sql, conn)
                     ' Handle DataRowView issue for SelectedValue
                     Dim seriesId As Object = cmbSeriesName.SelectedValue
@@ -135,197 +414,12 @@ ORDER BY mo.modelName"
                         Dim dt As New DataTable()
                         dt.Load(reader)
                         dgvListingInformation.DataSource = dt
-                        ' After loading, check for missing parentsku
-                        For Each row As DataRow In dt.Rows
-                            If row.Table.Columns.Contains("parentsku") Then
-                                Dim parentSkuObj = row("parentsku")
-                                If parentSkuObj Is DBNull.Value OrElse String.IsNullOrWhiteSpace(parentSkuObj.ToString()) Then
-                                    Dim modelName As String = If(row.Table.Columns.Contains("modelName"), row("modelName").ToString(), "(unknown)")
-                                    Dim result = MessageBox.Show(
-                                        $"Model '{modelName}' does not have a Parent SKU. Would you like to create a Parent SKU now?",
-                                        "Missing Parent SKU",
-                                        MessageBoxButtons.YesNoCancel,
-                                        MessageBoxIcon.Question
-                                    )
-                                    ' We'll wire up the Yes/No/Cancel logic later as requested
-                                    Exit For ' Only prompt once per load
-                                End If
-                            End If
-                        Next
                     End Using
                 End Using
             End Using
         Catch ex As Exception
             MessageBox.Show("Error loading model/pricing info: " & ex.Message, "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
-        ' <<< end changed
-    End Sub
-
-
-    ' Purpose: Handles the click event for btnApiTester, calls Reverb API asynchronously and displays user info.
-    ' Dependencies: Imports System.Net.Http, Imports Newtonsoft.Json, ReverbApiClient
-    ' Current date: 2025-09-25
-    Private Async Sub btnApiTester_Click(sender As Object, e As EventArgs) Handles btnApiTester.Click
-        ' >>> changed
-        Try
-            Dim client As New ReverbApiClient("2c90ace94932a6ca039b0ece7d5b92be5b913ce74b10c9dce8e52fcc345da9e9")
-            Dim userInfoJson = Await client.GetUserInfoAsync()
-            MessageBox.Show(userInfoJson, "Reverb User Info")
-        Catch ex As Exception
-            MessageBox.Show("Failed to contact Reverb: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-        ' <<< end changed
-    End Sub
-
-    ' Purpose: Builds a ReverbListing object using equipmentTypeId, marketplaceId, and model-specific data, generating the title and description by replacing placeholders in the templates.
-    ' Dependencies: Imports System.Data.SqlClient, ReverbListing, ReverbPhoto, Newtonsoft.Json
-    ' Current date: 2025-09-25
-    Private Function BuildReverbListing(equipmentTypeId As Integer, marketplaceId As Integer, modelData As DataRow) As ReverbListing
-        ' >>> changed
-        Dim allowedFields As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
-        Dim images As New List(Of ReverbPhoto)()
-        Dim descriptionTemplate As String = ""
-        Dim description As String = ""
-        Dim productType As String = ""
-        Dim subcategory1 As String = ""
-        Dim titleTemplate As String = ""
-        Dim title As String = ""
-
-        Try
-            Using conn = DbConnectionManager.CreateOpenConnection()
-                ' 1. Get allowed values for the key fields (only where FK_equipmentTypeId matches)
-                Dim sqlAllowed = "
-                SELECT marketplaceReverbNameValuesAllowed, allowedValue
-                FROM MpReverbNameValuesAllowed
-                WHERE FK_marketplaceNameId = @MarketplaceId AND FK_equipmentTypeId = @EquipmentTypeId"
-                Using cmd As New SqlCommand(sqlAllowed, conn)
-                    cmd.Parameters.AddWithValue("@MarketplaceId", marketplaceId)
-                    cmd.Parameters.AddWithValue("@EquipmentTypeId", equipmentTypeId)
-                    Using reader = cmd.ExecuteReader()
-                        While reader.Read()
-                            Dim field = reader("marketplaceReverbNameValuesAllowed").ToString()
-                            Dim value = reader("allowedValue").ToString()
-                            allowedFields(field) = value
-                        End While
-                    End Using
-                End Using
-
-                ' 2. Assign the key fields from allowedFields
-                If allowedFields.ContainsKey("product_type") Then productType = allowedFields("product_type")
-                If allowedFields.ContainsKey("subcategory_1") Then subcategory1 = allowedFields("subcategory_1")
-                If allowedFields.ContainsKey("title") Then titleTemplate = allowedFields("title")
-                If allowedFields.ContainsKey("description") Then descriptionTemplate = allowedFields("description")
-
-                ' 3. Generate the title by replacing placeholders
-                If Not String.IsNullOrWhiteSpace(titleTemplate) Then
-                    title = titleTemplate _
-                        .Replace("[MANUFACTURER_NAME]", modelData("ManufacturerName").ToString()) _
-                        .Replace("[SERIES_NAME]", modelData("seriesName").ToString()) _
-                        .Replace("[MODEL_NAME]", modelData("modelName").ToString()) _
-                        .Replace("[EQUIPMENT_TYPE]", modelData("equipmentTypeName").ToString())
-                Else
-                    title = modelData("modelName").ToString()
-                End If
-
-                ' 4. Generate the description by replacing placeholders
-                If Not String.IsNullOrWhiteSpace(descriptionTemplate) Then
-                    description = descriptionTemplate _
-                        .Replace("[MANUFACTURER_NAME]", modelData("ManufacturerName").ToString()) _
-                        .Replace("[SERIES_NAME]", modelData("seriesName").ToString()) _
-                        .Replace("[MODEL_NAME]", modelData("modelName").ToString()) _
-                        .Replace("[EQUIPMENT_TYPE]", modelData("equipmentTypeName").ToString())
-                Else
-                    description = "No description available."
-                End If
-
-                ' 5. Get images (Photos) for correct marketplace and equipmentTypeId, ordered by position
-                Dim sqlImages = "
-                    SELECT position, imageUrl
-                    FROM ModelEquipmentTypeImage
-                    WHERE FK_marketplaceNameId = @MarketplaceId AND FK_equipmentTypeId = @EquipmentTypeId AND isActive = 1
-                    ORDER BY position"
-                Using cmd As New SqlCommand(sqlImages, conn)
-                    cmd.Parameters.AddWithValue("@MarketplaceId", marketplaceId)
-                    cmd.Parameters.AddWithValue("@EquipmentTypeId", equipmentTypeId)
-                    Using reader = cmd.ExecuteReader()
-                        While reader.Read()
-                            Dim url As String = reader("imageUrl").ToString()
-                            If Not String.IsNullOrWhiteSpace(url) Then
-                                images.Add(New ReverbPhoto With {.PhotoUrl = url})
-                            End If
-                        End While
-                    End Using
-                End Using
-            End Using
-
-            ' 6. Build the listing object, using allowedFields for the key fields
-            Dim listing As New ReverbListing With {
-                .Title = title, ' >>> changed
-                .Condition = If(modelData.Table.Columns.Contains("condition") AndAlso Not IsDBNull(modelData("condition")), modelData("condition").ToString(), "excellent"),
-                .Inventory = 1,
-                .Sku = modelData("parentsku").ToString(),
-                .Make = modelData("ManufacturerName").ToString(),
-                .Model = modelData("modelName").ToString(),
-                .Description = description, ' >>> changed
-                .Price = If(modelData.Table.Columns.Contains("RetailPrice_Choice_Reverb") AndAlso Not IsDBNull(modelData("RetailPrice_Choice_Reverb")), Convert.ToDecimal(modelData("RetailPrice_Choice_Reverb")), 0D),
-                .ProductType = productType, ' >>> changed
-                .Subcategory1 = subcategory1, ' >>> changed
-                .OffersEnabled = True,
-                .LocalPickup = False,
-                .ShippingProfileName = "",
-                .UpcDoesNotApply = True,
-                .CountryOfOrigin = "",
-                .Photos = images
-            }
-            Return listing
-        Catch ex As Exception
-            MessageBox.Show("Error building Reverb listing: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Return Nothing
-        End Try
-        ' <<< end changed
-    End Function
-
-    ' Purpose: Handles the click event for btnReverbListings. Opens the MpListingsPreview form with a preview of the first Reverb listing in dgvListingInformation.
-    ' Dependencies: Imports System.Data.SqlClient, ReverbListing, MpListingsPreview, BuildReverbListing, DataGridView, WinForms
-    ' Current date: 2025-09-25
-    Private Sub btnReverbListings_Click(sender As Object, e As EventArgs) Handles btnReverbListings.Click
-        ' >>> changed
-        ' Preview the very first model in dgvListingInformation (if any), no selection required.
-        If dgvListingInformation.Rows.Count = 0 OrElse dgvListingInformation.DataSource Is Nothing Then
-            MessageBox.Show("No models available to preview.", "No Data", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            Return
-        End If
-
-        Try
-            ' Get the first DataRow from the DataGridView
-            Dim firstRow As DataGridViewRow = dgvListingInformation.Rows(0)
-            Dim dataRowView As DataRowView = TryCast(firstRow.DataBoundItem, DataRowView)
-            If dataRowView Is Nothing Then
-                MessageBox.Show("Could not retrieve model data.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                Return
-            End If
-            Dim modelData As DataRow = dataRowView.Row
-
-            ' Use the stored equipmentTypeId for all Reverb listing queries
-            Dim equipmentTypeId As Integer = currentEquipmentTypeId
-            Dim marketplaceId As Integer = GetMarketplaceIdByName("Reverb")
-            If marketplaceId = 0 Then
-                MessageBox.Show("Could not find marketplace ID for 'Reverb'.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                Return
-            End If
-
-
-            ' Build the ReverbListing object
-            Dim listing As ReverbListing = BuildReverbListing(equipmentTypeId, marketplaceId, modelData)
-            If listing Is Nothing Then Return
-
-            ' Show the preview form
-            Dim previewForm As New MpListingsPreview(listing)
-            previewForm.ShowDialog(Me)
-        Catch ex As Exception
-            MessageBox.Show("Failed to open Reverb listing preview: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
-        ' <<< end changed
     End Sub
 
     ' Purpose: Debug version of the MpReverbNameValuesDefault query and dictionary assignment.
@@ -395,4 +489,164 @@ ORDER BY mo.modelName"
         Return 0
         ' <<< end changed
     End Function
+
+    ' Purpose: Clears all checkboxes in checkedListMarketplaces when btnClearMarketPlaces is clicked.
+    ' Dependencies: Imports System.Windows.Forms
+    ' Current date: 2025-09-26
+
+    Private Sub btnClearMarketPlaces_Click(sender As Object, e As EventArgs) Handles btnClearMarketPlaces.Click
+        ' >>> changed
+        ' Loop through all items and uncheck them
+        For i As Integer = 0 To checkedListMarketplaces.Items.Count - 1
+            checkedListMarketplaces.SetItemChecked(i, False)
+        Next
+        ' <<< end changed
+    End Sub
+
+    Private Sub btnReverbListings_Click(sender As Object, e As EventArgs) Handles btnReverbListings.Click
+
+    End Sub
+    ''' <summary>
+    ''' Handles Create Listings button click. Opens MpListingsPreview for the first model in the grid and populates description, title, and field values using marketplace-agnostic helpers.
+    ''' Purpose: Loads default field values, image field values, and description template from mpFieldValues for the selected marketplace and equipment type.
+    ''' Dependencies: Imports System.Data.SqlClient, ListingHelpers, Forms\MpListingsPreview, ReverbListing, Imports System.Windows.Forms
+    ''' Current date: 2025-09-26
+    ''' </summary>
+    Private Sub btnCreateListings_Click(sender As Object, e As EventArgs) Handles btnCreateListings.Click
+        ' Validate manufacturer and series selection
+        If cmbManufacturerName.SelectedIndex = -1 OrElse cmbManufacturerName.SelectedValue Is Nothing Then
+            MessageBox.Show("Please select a manufacturer before creating listings.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        If cmbSeriesName.SelectedIndex = -1 OrElse cmbSeriesName.SelectedValue Is Nothing Then
+            MessageBox.Show("Please select a series before creating listings.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        If currentEquipmentTypeId = 0 Then
+            MessageBox.Show("Equipment type is not set. Please select a valid series.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ' Get the first checked marketplace (for testing)
+        Dim selectedMarketplaceId As Integer = 0
+        If checkedListMarketplaces.CheckedItems.Count = 0 Then
+            MessageBox.Show("Please select at least one marketplace.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        Dim selectedMarketplaceName As String = checkedListMarketplaces.CheckedItems(0).ToString()
+        selectedMarketplaceId = GetMarketplaceIdByName(selectedMarketplaceName)
+        If selectedMarketplaceId = 0 Then
+            MessageBox.Show("Could not find marketplace ID for '" & selectedMarketplaceName & "'.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
+
+        Try
+            ' Gather default field values
+            Dim defaultFields = ListingHelpers.GetMarketplaceDefaultFieldValues(selectedMarketplaceId, currentEquipmentTypeId)
+            ' Gather image field values
+            Dim imageFields = ListingHelpers.GetMarketplaceImageFieldValues(selectedMarketplaceId, currentEquipmentTypeId)
+
+            ' Get the first model in the grid
+            If dgvListingInformation.DataSource IsNot Nothing Then
+                Dim dt As DataTable = TryCast(dgvListingInformation.DataSource, DataTable)
+                If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                    Dim row As DataRow = dt.Rows(0)
+                    ' Dynamically load the description template from mpFieldValues for the selected marketplace and equipment type
+                    Dim descriptionTemplate As String = ""
+                    Using conn As SqlConnection = DbConnectionManager.CreateOpenConnection()
+                        ' Get the PK_mpFieldDefinitionsId for "description"
+                        Dim getFieldDefSql As String = "SELECT PK_mpFieldDefinitionsId FROM mpFieldDefinitions WHERE mpFieldName = @FieldName"
+                        Dim fieldDefId As Integer = 0
+                        Using cmdFieldDef As New SqlCommand(getFieldDefSql, conn)
+                            cmdFieldDef.Parameters.AddWithValue("@FieldName", "description")
+                            Dim result = cmdFieldDef.ExecuteScalar()
+                            If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                fieldDefId = Convert.ToInt32(result)
+                            End If
+                        End Using
+
+                        If fieldDefId <> 0 Then
+                            Dim sql As String = "SELECT TOP 1 defaultValue FROM mpFieldValues WHERE FK_mpNameId = @MarketplaceId AND FK_equipmentTypeId = @EquipmentTypeId AND FK_mpFieldDefinitionsId = @FieldDefId"
+                            Using cmd As New SqlCommand(sql, conn)
+                                cmd.Parameters.AddWithValue("@MarketplaceId", selectedMarketplaceId)
+                                cmd.Parameters.AddWithValue("@EquipmentTypeId", currentEquipmentTypeId)
+                                cmd.Parameters.AddWithValue("@FieldDefId", fieldDefId)
+                                Dim result = cmd.ExecuteScalar()
+                                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                                    descriptionTemplate = result.ToString()
+                                End If
+                            End Using
+                        End If
+                    End Using
+                    If String.IsNullOrWhiteSpace(descriptionTemplate) Then
+                        descriptionTemplate = "<li>Base Price: {{BASERETAILPRICE_CHOICE}}</li><li>With Pocket: {{BASERETAILPRICE_CHOICE + POCKET}}</li><li>With Zipper: {{BASERETAILPRICE_CHOICE + ZIPPERHANDLE}}</li><li>All: {{BASERETAILPRICE_CHOICE + POCKET + ZIPPERHANDLE}}</li>"
+                    End If
+
+                    Dim modelId As Integer = 0
+                    If row.Table.Columns.Contains("ModelId") Then
+                        modelId = Convert.ToInt32(row("ModelId"))
+                    ElseIf row.Table.Columns.Contains("PK_ModelId") Then
+                        modelId = Convert.ToInt32(row("PK_ModelId"))
+                    End If
+
+                    ' >>> changed
+                    ' Build the description using the local function, not ListingHelpers
+                    Dim description As String = BuildListingDescription(descriptionTemplate, modelId, selectedMarketplaceName, currentEquipmentTypeId, row("ManufacturerName").ToString(), row("SeriesName").ToString(), row("ModelName").ToString(), lblEquipmentType.Text)
+                    ' <<< end changed
+
+                    ' Show a pop-up with the IDs used for pricing
+                    MessageBox.Show(
+                $"MarketplaceID: {selectedMarketplaceId}{Environment.NewLine}EquipmentTypeID: {currentEquipmentTypeId}{Environment.NewLine}ModelID: {modelId}",
+                "Pricing Source Info",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            )
+
+                    ' Build title (example: ManufacturerName SeriesName ModelName EquipmentTypeName)
+                    Dim titleParts As New List(Of String)
+                    If row.Table.Columns.Contains("ManufacturerName") Then titleParts.Add(row("ManufacturerName").ToString())
+                    If row.Table.Columns.Contains("SeriesName") Then titleParts.Add(row("SeriesName").ToString())
+                    If row.Table.Columns.Contains("ModelName") Then titleParts.Add(row("ModelName").ToString())
+                    If row.Table.Columns.Contains("EquipmentTypeName") Then titleParts.Add(row("EquipmentTypeName").ToString())
+                    Dim title As String = String.Join(" ", titleParts)
+
+                    Dim parentSku As String = ""
+                    If row.Table.Columns.Contains("parentSku") AndAlso Not IsDBNull(row("parentSku")) Then
+                        parentSku = row("parentSku").ToString().Trim()
+                    End If
+
+                    Dim modelName As String = ""
+                    If row.Table.Columns.Contains("ModelName") AndAlso Not IsDBNull(row("ModelName")) Then
+                        modelName = row("ModelName").ToString().Trim()
+                    End If
+
+                    Dim baseRetailPriceChoice As Decimal = 0D
+                    If selectedMarketplaceName = "Reverb" Then
+                        If row.Table.Columns.Contains("RetailPrice_Choice_Reverb") AndAlso Not IsDBNull(row("RetailPrice_Choice_Reverb")) Then
+                            baseRetailPriceChoice = Convert.ToDecimal(row("RetailPrice_Choice_Reverb"))
+                        End If
+                    End If
+
+                    Dim listing As ReverbListing = ListingHelpers.CreateMarketplaceListing(
+                selectedMarketplaceName,
+                title,
+                description,
+                defaultFields,
+                parentSku,
+                modelName,
+                baseRetailPriceChoice
+            )
+
+                    Dim previewForm As New MpListingsPreview(listing)
+                    previewForm.ShowDialog()
+                Else
+                    MessageBox.Show("No models found for the selected series.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                End If
+            Else
+                MessageBox.Show("No model data loaded. Please select a series.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Error creating listings: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class

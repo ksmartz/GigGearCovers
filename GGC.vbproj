@@ -123,6 +123,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="GitHubLinkHelpers.vb" />
+    <Compile Include="ListingHelpers.vb" />
     <Compile Include="ModelCostUpdateResults.vb" />
     <Compile Include="ModelDesignFeatures.vb" />
     <Compile Include="ModelManufacturers.vb" />
@@ -162,6 +163,7 @@
     <Compile Include="ModelSkuBuilder.vb" />
     <Compile Include="ReverbCode\ReverbApiClient.vb" />
     <Compile Include="ReverbCode\ReverbListingModel.vb" />
+    <Compile Include="TESTMODULE.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Forms\formListings.resx">

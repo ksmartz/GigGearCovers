@@ -22,21 +22,22 @@ Partial Class MpListingsPreview
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.lblWooSampleTitle = New System.Windows.Forms.Label()
+        Me.lblTitle = New System.Windows.Forms.Label()
         Me.wbWooLongDescriptionPreview = New System.Windows.Forms.WebBrowser()
-        Me.txtReverbPreview = New System.Windows.Forms.TextBox()
+        Me.txtDescriptionPreview = New System.Windows.Forms.TextBox()
         Me.lblWooTitle = New System.Windows.Forms.Label()
         Me.lblWooLongDescriptionSample = New System.Windows.Forms.Label()
+        Me.txtFieldNameValues = New System.Windows.Forms.TextBox()
         Me.SuspendLayout()
         '
-        'lblWooSampleTitle
+        'lblTitle
         '
-        Me.lblWooSampleTitle.AutoSize = True
-        Me.lblWooSampleTitle.Location = New System.Drawing.Point(287, 57)
-        Me.lblWooSampleTitle.Name = "lblWooSampleTitle"
-        Me.lblWooSampleTitle.Size = New System.Drawing.Size(133, 20)
-        Me.lblWooSampleTitle.TabIndex = 0
-        Me.lblWooSampleTitle.Text = "Woo Sample Title"
+        Me.lblTitle.AutoSize = True
+        Me.lblTitle.Location = New System.Drawing.Point(64, 97)
+        Me.lblTitle.Name = "lblTitle"
+        Me.lblTitle.Size = New System.Drawing.Size(133, 20)
+        Me.lblTitle.TabIndex = 0
+        Me.lblTitle.Text = "Woo Sample Title"
         '
         'wbWooLongDescriptionPreview
         '
@@ -46,14 +47,14 @@ Partial Class MpListingsPreview
         Me.wbWooLongDescriptionPreview.Size = New System.Drawing.Size(948, 678)
         Me.wbWooLongDescriptionPreview.TabIndex = 1
         '
-        'txtReverbPreview
+        'txtDescriptionPreview
         '
-        Me.txtReverbPreview.Location = New System.Drawing.Point(12, 132)
-        Me.txtReverbPreview.MaximumSize = New System.Drawing.Size(800, 800)
-        Me.txtReverbPreview.Multiline = True
-        Me.txtReverbPreview.Name = "txtReverbPreview"
-        Me.txtReverbPreview.Size = New System.Drawing.Size(800, 685)
-        Me.txtReverbPreview.TabIndex = 2
+        Me.txtDescriptionPreview.Location = New System.Drawing.Point(39, 499)
+        Me.txtDescriptionPreview.MaximumSize = New System.Drawing.Size(800, 800)
+        Me.txtDescriptionPreview.Multiline = True
+        Me.txtDescriptionPreview.Name = "txtDescriptionPreview"
+        Me.txtDescriptionPreview.Size = New System.Drawing.Size(800, 685)
+        Me.txtDescriptionPreview.TabIndex = 2
         '
         'lblWooTitle
         '
@@ -75,16 +76,26 @@ Partial Class MpListingsPreview
         Me.lblWooLongDescriptionSample.TabIndex = 4
         Me.lblWooLongDescriptionSample.Text = "Woo Long Description Sample: "
         '
+        'txtFieldNameValues
+        '
+        Me.txtFieldNameValues.Location = New System.Drawing.Point(39, 147)
+        Me.txtFieldNameValues.MaximumSize = New System.Drawing.Size(800, 800)
+        Me.txtFieldNameValues.Multiline = True
+        Me.txtFieldNameValues.Name = "txtFieldNameValues"
+        Me.txtFieldNameValues.Size = New System.Drawing.Size(785, 346)
+        Me.txtFieldNameValues.TabIndex = 5
+        '
         'MpListingsPreview
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(2172, 1146)
+        Me.ClientSize = New System.Drawing.Size(2172, 1404)
+        Me.Controls.Add(Me.txtFieldNameValues)
         Me.Controls.Add(Me.lblWooLongDescriptionSample)
         Me.Controls.Add(Me.lblWooTitle)
-        Me.Controls.Add(Me.txtReverbPreview)
+        Me.Controls.Add(Me.txtDescriptionPreview)
         Me.Controls.Add(Me.wbWooLongDescriptionPreview)
-        Me.Controls.Add(Me.lblWooSampleTitle)
+        Me.Controls.Add(Me.lblTitle)
         Me.Name = "MpListingsPreview"
         Me.Text = "MP Listings Preview"
         Me.ResumeLayout(False)
@@ -92,9 +103,10 @@ Partial Class MpListingsPreview
 
     End Sub
 
-    Friend WithEvents lblWooSampleTitle As Windows.Forms.Label
+    Friend WithEvents lblTitle As Windows.Forms.Label
     Friend WithEvents wbWooLongDescriptionPreview As Windows.Forms.WebBrowser
-    Friend WithEvents txtReverbPreview As Windows.Forms.TextBox
+    Friend WithEvents txtDescriptionPreview As Windows.Forms.TextBox
     Friend WithEvents lblWooTitle As Windows.Forms.Label
     Friend WithEvents lblWooLongDescriptionSample As Windows.Forms.Label
+    Friend WithEvents txtFieldNameValues As Windows.Forms.TextBox
 End Class
