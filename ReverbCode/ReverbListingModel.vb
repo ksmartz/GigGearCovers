@@ -54,6 +54,9 @@ Public Class ReverbListing
     <JsonProperty("country_of_origin")>
     Public Property CountryOfOrigin As String
 
+    <JsonProperty("photos")>
+    Public Property Photos As List(Of String)
+
     ' >>> changed
     ' Returns a dictionary of all property names and their values.
     Public ReadOnly Property FieldNameValues As Dictionary(Of String, Object)
@@ -74,6 +77,7 @@ Public Class ReverbListing
             dict("ShippingProfileName") = ShippingProfileName
             dict("UpcDoesNotApply") = UpcDoesNotApply
             dict("CountryOfOrigin") = CountryOfOrigin
+            dict("Photos") = Photos
             Return dict
         End Get
     End Property

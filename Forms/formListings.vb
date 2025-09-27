@@ -1,5 +1,8 @@
 ﻿Imports System.Collections.Generic
+Imports System.Configuration
 Imports System.Data.SqlClient
+Imports System.Net.Http
+Imports System.Net.Http.Headers
 Imports System.Text.RegularExpressions
 Imports System.Windows.Forms
 Imports ReverbCode.ReverbListingModel
@@ -92,7 +95,7 @@ Public Class formListings
             Case Else
                 priceSuffix = "_Reverb" ' Default to Reverb
         End Select
-        MsgBox(descriptionTemplate)
+        'MsgBox(descriptionTemplate)
         ' Strongly-typed variables for price values
         Dim baseRetailPriceChoice As Decimal = 0D
         Dim baseRetailPriceChoicePadded As Decimal = 0D
@@ -506,13 +509,13 @@ ORDER BY mo.ModelName"
     Private Sub btnReverbListings_Click(sender As Object, e As EventArgs) Handles btnReverbListings.Click
 
     End Sub
-    ''' <summary>
-    ''' Handles Create Listings button click. Opens MpListingsPreview for the first model in the grid and populates description, title, and field values using marketplace-agnostic helpers.
-    ''' Purpose: Loads default field values, image field values, and description template from mpFieldValues for the selected marketplace and equipment type.
-    ''' Dependencies: Imports System.Data.SqlClient, ListingHelpers, Forms\MpListingsPreview, ReverbListing, Imports System.Windows.Forms
-    ''' Current date: 2025-09-26
-    ''' </summary>
-    Private Sub btnCreateListings_Click(sender As Object, e As EventArgs) Handles btnCreateListings.Click
+    ' Purpose: Handles Create Listings button click. Checks for existing SKUs on Reverb using the Reverb API before upload.
+    ' Dependencies: Imports System.Net.Http, Imports Newtonsoft.Json, Imports System.Threading.Tasks, ReverbApiClient, ListingHelpers, Forms\MpListingsPreview, ReverbListing, Imports System.Windows.Forms
+    ' Current date: 2025-09-26
+    ' Purpose: Handles Create Listings button click. Checks for existing SKUs on Reverb using the Reverb API before upload.
+    ' Dependencies: Imports System.Configuration, System.Net.Http, Newtonsoft.Json, System.Threading.Tasks, ReverbApiClient, ListingHelpers, Forms\MpListingsPreview, ReverbListing, System.Windows.Forms
+    ' Current date: 2025-09-26
+    Private Async Sub btnCreateListings_Click(sender As Object, e As EventArgs) Handles btnCreateListings.Click
         ' Validate manufacturer and series selection
         If cmbManufacturerName.SelectedIndex = -1 OrElse cmbManufacturerName.SelectedValue Is Nothing Then
             MessageBox.Show("Please select a manufacturer before creating listings.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -550,6 +553,28 @@ ORDER BY mo.ModelName"
             If dgvListingInformation.DataSource IsNot Nothing Then
                 Dim dt As DataTable = TryCast(dgvListingInformation.DataSource, DataTable)
                 If dt IsNot Nothing AndAlso dt.Rows.Count > 0 Then
+                    ' Gather SKUs from the grid
+                    Dim skusToCheck As New List(Of String)
+                    For Each skuRow As DataRow In dt.Rows
+                        If skuRow.Table.Columns.Contains("parentSku") AndAlso Not IsDBNull(skuRow("parentSku")) Then
+                            Dim sku As String = skuRow("parentSku").ToString().Trim()
+                            If Not String.IsNullOrWhiteSpace(sku) Then
+                                skusToCheck.Add(sku)
+                            End If
+                        End If
+                    Next
+
+                    ' >>> changed
+                    ' Read the Reverb API token from App.config
+                    Dim apiToken As String = ConfigurationManager.AppSettings("ReverbApiToken")
+                    Dim foundSku As String = Await ListingHelpers.CheckReverbSkusExistAsync(skusToCheck, apiToken)
+                    If Not String.IsNullOrWhiteSpace(foundSku) Then
+                        Dim result = MessageBox.Show($"SKU '{foundSku}' is already listed on Reverb. Would you like to cancel?", "Duplicate SKU Found", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
+                        ' Cancel the process for now regardless of Yes/No
+                        Return
+                    End If
+                    ' <<< end changed
+
                     Dim row As DataRow = dt.Rows(0)
                     ' Dynamically load the description template from mpFieldValues for the selected marketplace and equipment type
                     Dim descriptionTemplate As String = ""
@@ -589,18 +614,8 @@ ORDER BY mo.ModelName"
                         modelId = Convert.ToInt32(row("PK_ModelId"))
                     End If
 
-                    ' >>> changed
                     ' Build the description using the local function, not ListingHelpers
                     Dim description As String = BuildListingDescription(descriptionTemplate, modelId, selectedMarketplaceName, currentEquipmentTypeId, row("ManufacturerName").ToString(), row("SeriesName").ToString(), row("ModelName").ToString(), lblEquipmentType.Text)
-                    ' <<< end changed
-
-                    ' Show a pop-up with the IDs used for pricing
-                    MessageBox.Show(
-                $"MarketplaceID: {selectedMarketplaceId}{Environment.NewLine}EquipmentTypeID: {currentEquipmentTypeId}{Environment.NewLine}ModelID: {modelId}",
-                "Pricing Source Info",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            )
 
                     ' Build title (example: ManufacturerName SeriesName ModelName EquipmentTypeName)
                     Dim titleParts As New List(Of String)
@@ -627,15 +642,20 @@ ORDER BY mo.ModelName"
                         End If
                     End If
 
+                    ' Convert imageFields dictionary to a list of image URLs for the listing
+                    Dim photos As New List(Of String)(imageFields.Values.Where(Function(url) Not String.IsNullOrWhiteSpace(url)))
+
+                    ' Pass photos to the listing object
                     Dim listing As ReverbListing = ListingHelpers.CreateMarketplaceListing(
-                selectedMarketplaceName,
-                title,
-                description,
-                defaultFields,
-                parentSku,
-                modelName,
-                baseRetailPriceChoice
-            )
+                    selectedMarketplaceName,
+                    title,
+                    description,
+                    defaultFields,
+                    parentSku,
+                    modelName,
+                    baseRetailPriceChoice,
+                    photos
+                )
 
                     Dim previewForm As New MpListingsPreview(listing)
                     previewForm.ShowDialog()
@@ -648,5 +668,38 @@ ORDER BY mo.ModelName"
         Catch ex As Exception
             MessageBox.Show("Error creating listings: " & ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Async Sub btnApiTester_Click(sender As Object, e As EventArgs) Handles btnApiTester.Click
+        ' >>> changed
+        ' Read the Reverb API token from App.config
+        Dim apiToken As String = ConfigurationManager.AppSettings("ReverbApiToken")
+        If String.IsNullOrWhiteSpace(apiToken) Then
+            MessageBox.Show("Reverb API token is missing in App.config.", "API Token Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
+
+        ' Use the simplest endpoint that requires authentication
+        Dim url As String = "https://api.reverb.com/api/my/account"
+
+        Try
+            Using client As New HttpClient()
+                client.DefaultRequestHeaders.Authorization = New AuthenticationHeaderValue("Bearer", apiToken)
+                client.DefaultRequestHeaders.Accept.Add(New MediaTypeWithQualityHeaderValue("application/json"))
+                client.DefaultRequestHeaders.Add("Accept-Version", "3.0") ' <<< added required header
+
+                Dim response As HttpResponseMessage = Await client.GetAsync(url)
+                Dim json As String = Await response.Content.ReadAsStringAsync()
+
+                If response.IsSuccessStatusCode Then
+                    MessageBox.Show("Successfully connected to Reverb API!" & vbCrLf & "Response:" & vbCrLf & json, "Connection Test", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Else
+                    MessageBox.Show($"Failed to connect to Reverb API.{vbCrLf}Status: {response.StatusCode} {response.ReasonPhrase}{vbCrLf}Response: {json}", "Connection Test", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End If
+            End Using
+        Catch ex As Exception
+            MessageBox.Show("Error connecting to Reverb API: " & ex.Message, "Connection Test", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+        ' <<< end changed
     End Sub
 End Class

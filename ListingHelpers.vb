@@ -1,5 +1,6 @@
 ﻿Imports System.Data.SqlClient
 Imports System.Text.RegularExpressions
+Imports System.Windows.Forms
 Imports ReverbCode.ReverbListingModel
 
 
@@ -8,41 +9,42 @@ Imports ReverbCode.ReverbListingModel
 ''' </summary>
 Public Class ListingHelpers
 
-    ' Purpose: Creates a listing object for the specified marketplace, mapping default fields to the correct model properties. Sets Sku from parentSku and Model from modelName.
-    ' Dependencies: Imports ReverbCode.ReverbListingModel
+    ' Purpose: Creates a ReverbListing object with all required fields, mapping DB field names to model properties.
+    ' Dependencies: Imports System.Collections.Generic, ReverbCode.ReverbListingModel
     ' Current date: 2025-09-26
-
     Public Shared Function CreateMarketplaceListing(
-         marketplaceName As String,
-         title As String,
-         description As String,
-         defaultFields As Dictionary(Of String, String),
-         parentSku As String,
-         modelName As String,
-         baseRetailPriceChoice As Decimal ' >>> changed
-     ) As ReverbListing
+    marketplaceName As String,
+    title As String,
+    description As String,
+    defaultFields As Dictionary(Of String, String),
+    parentSku As String,
+    modelName As String,
+    baseRetailPriceChoice As Decimal,
+    photos As List(Of String)
+) As ReverbListing
+        ' Create and populate the listing object
+        Dim listing As New ReverbListing()
+        listing.Title = title
+        listing.Description = description
+        listing.Sku = parentSku
+        listing.Model = modelName
+        listing.Price = baseRetailPriceChoice
+        listing.Photos = photos
+
+        ' Set other fields from defaultFields dictionary
+        If defaultFields.ContainsKey("Condition") Then listing.Condition = defaultFields("Condition")
+        If defaultFields.ContainsKey("Inventory") Then listing.Inventory = Convert.ToInt32(defaultFields("Inventory"))
+        If defaultFields.ContainsKey("Make") Then listing.Make = defaultFields("Make")
         ' >>> changed
-        ' Map fields for Reverb; extend for other marketplaces as needed
-        Dim listing As New ReverbListing() With {
-            .Title = title,
-            .Description = description
-        }
-        If marketplaceName = "Reverb" Then
-            listing.Condition = If(defaultFields.ContainsKey("condition"), defaultFields("condition"), Nothing)
-            listing.Inventory = If(defaultFields.ContainsKey("inventory"), Convert.ToInt32(defaultFields("inventory")), 0)
-            listing.Make = If(defaultFields.ContainsKey("make"), defaultFields("make"), Nothing)
-            listing.Sku = parentSku
-            listing.Model = modelName
-            listing.Price = baseRetailPriceChoice ' Always use BASERETAILPRICE_CHOICE for Reverb price
-            listing.ProductType = If(defaultFields.ContainsKey("product_type"), defaultFields("product_type"), Nothing)
-            listing.Subcategory1 = If(defaultFields.ContainsKey("subcategory_1"), defaultFields("subcategory_1"), Nothing)
-            listing.OffersEnabled = If(defaultFields.ContainsKey("offers_enabled"), Convert.ToBoolean(defaultFields("offers_enabled")), False)
-            listing.LocalPickup = If(defaultFields.ContainsKey("local_pickup"), Convert.ToBoolean(defaultFields("local_pickup")), False)
-            listing.ShippingProfileName = If(defaultFields.ContainsKey("shipping_profile_name"), defaultFields("shipping_profile_name"), Nothing)
-            listing.UpcDoesNotApply = If(defaultFields.ContainsKey("upc_does_not_apply"), Convert.ToBoolean(defaultFields("upc_does_not_apply")), False)
-            listing.CountryOfOrigin = If(defaultFields.ContainsKey("country_of_origin"), defaultFields("country_of_origin"), Nothing)
-        End If
+        If defaultFields.ContainsKey("product_type") Then listing.ProductType = defaultFields("product_type")
+        If defaultFields.ContainsKey("subcategory_1") Then listing.Subcategory1 = defaultFields("subcategory_1")
         ' <<< end changed
+        If defaultFields.ContainsKey("OffersEnabled") Then listing.OffersEnabled = Convert.ToBoolean(defaultFields("OffersEnabled"))
+        If defaultFields.ContainsKey("LocalPickup") Then listing.LocalPickup = Convert.ToBoolean(defaultFields("LocalPickup"))
+        If defaultFields.ContainsKey("ShippingProfileName") Then listing.ShippingProfileName = defaultFields("ShippingProfileName")
+        If defaultFields.ContainsKey("UpcDoesNotApply") Then listing.UpcDoesNotApply = Convert.ToBoolean(defaultFields("UpcDoesNotApply"))
+        If defaultFields.ContainsKey("country_of_origin") Then listing.CountryOfOrigin = defaultFields("country_of_origin")
+
         Return listing
     End Function
 
@@ -378,5 +380,40 @@ ORDER BY DateCalculated DESC"
             Console.WriteLine("Error accessing ReverbListing field values: " & ex.Message)
         End Try
     End Sub
-    ' <<< end changed
+
+    ' Purpose: Checks a list of SKUs on Reverb, waits for all checks to complete, and shows a MessageBox if none are found.
+    ' Dependencies: Imports System.Net.Http, Imports System.Threading.Tasks, Imports System.Windows.Forms, ReverbApiClient
+    ' Current date: 2025-09-27
+    Public Shared Async Function CheckReverbSkusExistAsync(skusToCheck As List(Of String), apiToken As String) As Task(Of String)
+        ' >>> changed
+        ' Create the API client
+        Dim client As New ReverbApiClient(apiToken)
+        Dim foundSku As String = Nothing
+
+        ' List to hold the results
+        Dim skuResults As New List(Of Tuple(Of String, Boolean))()
+
+        ' Check each SKU asynchronously and collect results
+        For Each sku In skusToCheck
+            Dim exists As Boolean = Await client.SkuExistsOnReverbAsync(sku)
+            skuResults.Add(Tuple.Create(sku, exists))
+            If exists AndAlso foundSku Is Nothing Then
+                foundSku = sku ' First found SKU
+            End If
+        Next
+
+        ' After all checks, show a message if none were found
+        If skuResults.All(Function(t) Not t.Item2) Then
+            Dim result = MessageBox.Show("No SKUs were found on Reverb. Do you want to upload these listings?", "SKU Check Complete", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+            If result = DialogResult.Yes Then
+                Return Nothing ' Proceed with upload
+            Else
+                Return "User cancelled upload."
+            End If
+        End If
+
+        Return foundSku ' Return first found SKU, or Nothing if none found
+        ' <<< end changed
+    End Function
+
 End Class

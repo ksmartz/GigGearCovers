@@ -66,7 +66,7 @@ Partial Class formListings
         '
         'btnApiTester
         '
-        Me.btnApiTester.Location = New System.Drawing.Point(2105, 48)
+        Me.btnApiTester.Location = New System.Drawing.Point(323, 426)
         Me.btnApiTester.Name = "btnApiTester"
         Me.btnApiTester.Size = New System.Drawing.Size(160, 39)
         Me.btnApiTester.TabIndex = 3
