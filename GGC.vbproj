@@ -49,7 +49,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>GGC.formListings</StartupObject>
+    <StartupObject>GGC.formDashboard</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.8, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -116,6 +116,24 @@
     <Compile Include="CodeExporter.vb" />
     <Compile Include="Data\DbConnectionManager.vb" />
     <Compile Include="DesignFeature.vb" />
+    <Compile Include="FormAddManufacturerSeries.Designer.vb">
+      <DependentUpon>FormAddManufacturerSeries.vb</DependentUpon>
+    </Compile>
+    <Compile Include="FormAddManufacturerSeries.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\formAddModels.Designer.vb">
+      <DependentUpon>formAddModels.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\formAddModels.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\formDashboard.Designer.vb">
+      <DependentUpon>formDashboard.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\formDashboard.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\formListings.Designer.vb">
       <DependentUpon>formListings.vb</DependentUpon>
     </Compile>
@@ -123,6 +141,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="GitHubLinkHelpers.vb" />
+    <Compile Include="JsonReviewForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ListingHelpers.vb" />
     <Compile Include="ModelCostUpdateResults.vb" />
     <Compile Include="ModelDesignFeatures.vb" />
@@ -166,6 +187,15 @@
     <Compile Include="TESTMODULE.vb" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="FormAddManufacturerSeries.resx">
+      <DependentUpon>FormAddManufacturerSeries.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\formAddModels.resx">
+      <DependentUpon>formAddModels.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\formDashboard.resx">
+      <DependentUpon>formDashboard.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\formListings.resx">
       <DependentUpon>formListings.vb</DependentUpon>
     </EmbeddedResource>

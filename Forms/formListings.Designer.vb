@@ -35,6 +35,8 @@ Partial Class formListings
         Me.txtEquipmentType = New System.Windows.Forms.TextBox()
         Me.btnCreateListings = New System.Windows.Forms.Button()
         Me.btnSubmitListings = New System.Windows.Forms.Button()
+        Me.btnCreateUploadFiles = New System.Windows.Forms.Button()
+        Me.btnReturnToDashboard = New System.Windows.Forms.Button()
         CType(Me.dgvListingInformation, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
@@ -152,11 +154,31 @@ Partial Class formListings
         Me.btnSubmitListings.Text = "Submit Listings"
         Me.btnSubmitListings.UseVisualStyleBackColor = True
         '
+        'btnCreateUploadFiles
+        '
+        Me.btnCreateUploadFiles.Location = New System.Drawing.Point(345, 332)
+        Me.btnCreateUploadFiles.Name = "btnCreateUploadFiles"
+        Me.btnCreateUploadFiles.Size = New System.Drawing.Size(164, 38)
+        Me.btnCreateUploadFiles.TabIndex = 13
+        Me.btnCreateUploadFiles.Text = "Create CSV's"
+        Me.btnCreateUploadFiles.UseVisualStyleBackColor = True
+        '
+        'btnReturnToDashboard
+        '
+        Me.btnReturnToDashboard.Location = New System.Drawing.Point(78, 482)
+        Me.btnReturnToDashboard.Name = "btnReturnToDashboard"
+        Me.btnReturnToDashboard.Size = New System.Drawing.Size(164, 44)
+        Me.btnReturnToDashboard.TabIndex = 14
+        Me.btnReturnToDashboard.Text = "Dashboard"
+        Me.btnReturnToDashboard.UseVisualStyleBackColor = True
+        '
         'formListings
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(2615, 920)
+        Me.Controls.Add(Me.btnReturnToDashboard)
+        Me.Controls.Add(Me.btnCreateUploadFiles)
         Me.Controls.Add(Me.btnSubmitListings)
         Me.Controls.Add(Me.btnCreateListings)
         Me.Controls.Add(Me.txtEquipmentType)
@@ -191,4 +213,6 @@ Partial Class formListings
     Friend WithEvents txtEquipmentType As Windows.Forms.TextBox
     Friend WithEvents btnCreateListings As Windows.Forms.Button
     Friend WithEvents btnSubmitListings As Windows.Forms.Button
+    Friend WithEvents btnCreateUploadFiles As Windows.Forms.Button
+    Friend WithEvents btnReturnToDashboard As Windows.Forms.Button
 End Class

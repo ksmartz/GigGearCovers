@@ -287,12 +287,13 @@ ORDER BY DateCalculated DESC"
     ' Purpose: Maps image field names (from MpFieldDefinitions) to image URLs (from ModelEquipmentTypeImage) for a marketplace and equipment type.
     ' Dependencies: Imports System.Data.SqlClient
     ' Current date: 2025-09-26
+
     Public Shared Function GetMarketplaceImageFieldValues(marketplaceId As Integer, equipmentTypeId As Integer) As Dictionary(Of String, String)
         ' >>> changed
         Dim result As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
         Try
-            Using conn = DbConnectionManager.CreateOpenConnection()
-                ' 1. Get image field names for the marketplace
+            Using conn As SqlConnection = DbConnectionManager.CreateOpenConnection()
+                ' 1. Get image field names for the marketplace (up to 25)
                 Dim fieldNames As New List(Of String)
                 Dim sqlFields As String = "SELECT mpFieldName FROM MpFieldDefinitions WHERE FK_mpNameId = @MarketplaceId AND mpFieldName LIKE 'product_image_%' ORDER BY mpFieldName"
                 Using cmdFields As New SqlCommand(sqlFields, conn)
@@ -304,9 +305,9 @@ ORDER BY DateCalculated DESC"
                     End Using
                 End Using
 
-                ' 2. Get image URLs for the marketplace and equipment type
+                ' 2. Get up to 25 image URLs for the marketplace and equipment type
                 Dim imageUrls As New List(Of String)
-                Dim sqlImages As String = "SELECT imageUrl FROM ModelEquipmentTypeImage WHERE FK_mpNameId = @MarketplaceId AND FK_equipmentTypeId = @EquipmentTypeId AND isActive = 1 ORDER BY position"
+                Dim sqlImages As String = "SELECT TOP 25 imageUrl FROM ModelEquipmentTypeImage WHERE FK_mpNameId = @MarketplaceId AND FK_equipmentTypeId = @EquipmentTypeId AND isActive = 1 ORDER BY position"
                 Using cmdImages As New SqlCommand(sqlImages, conn)
                     cmdImages.Parameters.AddWithValue("@MarketplaceId", marketplaceId)
                     cmdImages.Parameters.AddWithValue("@EquipmentTypeId", equipmentTypeId)
@@ -317,8 +318,8 @@ ORDER BY DateCalculated DESC"
                     End Using
                 End Using
 
-                ' 3. Map field names to image URLs
-                For i As Integer = 0 To fieldNames.Count - 1
+                ' 3. Map field names to image URLs (up to 25)
+                For i As Integer = 0 To Math.Min(fieldNames.Count, 25) - 1
                     If i < imageUrls.Count Then
                         result(fieldNames(i)) = imageUrls(i)
                     Else
@@ -332,6 +333,51 @@ ORDER BY DateCalculated DESC"
         Return result
         ' <<< end changed
     End Function
+    'Public Shared Function GetMarketplaceImageFieldValues(marketplaceId As Integer, equipmentTypeId As Integer) As Dictionary(Of String, String)
+    '    ' >>> changed
+    '    Dim result As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+    '    Try
+    '        Using conn = DbConnectionManager.CreateOpenConnection()
+    '            ' 1. Get image field names for the marketplace
+    '            Dim fieldNames As New List(Of String)
+    '            Dim sqlFields As String = "SELECT mpFieldName FROM MpFieldDefinitions WHERE FK_mpNameId = @MarketplaceId AND mpFieldName LIKE 'product_image_%' ORDER BY mpFieldName"
+    '            Using cmdFields As New SqlCommand(sqlFields, conn)
+    '                cmdFields.Parameters.AddWithValue("@MarketplaceId", marketplaceId)
+    '                Using reader = cmdFields.ExecuteReader()
+    '                    While reader.Read()
+    '                        fieldNames.Add(reader("mpFieldName").ToString())
+    '                    End While
+    '                End Using
+    '            End Using
+
+    '            ' 2. Get image URLs for the marketplace and equipment type
+    '            Dim imageUrls As New List(Of String)
+    '            Dim sqlImages As String = "SELECT imageUrl FROM ModelEquipmentTypeImage WHERE FK_mpNameId = @MarketplaceId AND FK_equipmentTypeId = @EquipmentTypeId AND isActive = 1 ORDER BY position"
+    '            Using cmdImages As New SqlCommand(sqlImages, conn)
+    '                cmdImages.Parameters.AddWithValue("@MarketplaceId", marketplaceId)
+    '                cmdImages.Parameters.AddWithValue("@EquipmentTypeId", equipmentTypeId)
+    '                Using reader = cmdImages.ExecuteReader()
+    '                    While reader.Read()
+    '                        imageUrls.Add(reader("imageUrl").ToString())
+    '                    End While
+    '                End Using
+    '            End Using
+
+    '            ' 3. Map field names to image URLs
+    '            For i As Integer = 0 To fieldNames.Count - 1
+    '                If i < imageUrls.Count Then
+    '                    result(fieldNames(i)) = imageUrls(i)
+    '                Else
+    '                    result(fieldNames(i)) = "" ' No image for this field
+    '                End If
+    '            Next
+    '        End Using
+    '    Catch ex As Exception
+    '        Throw New Exception("Error mapping image fields to URLs: " & ex.Message, ex)
+    '    End Try
+    '    Return result
+    '    ' <<< end changed
+    'End Function
 
     ' Purpose: Gets all default field values for all selected marketplaces and equipment type.
     ' Returns: Dictionary(Of Integer, Dictionary(Of String, String))
