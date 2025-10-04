@@ -116,10 +116,16 @@
     <Compile Include="CodeExporter.vb" />
     <Compile Include="Data\DbConnectionManager.vb" />
     <Compile Include="DesignFeature.vb" />
-    <Compile Include="FormAddManufacturerSeries.Designer.vb">
+    <Compile Include="Forms\FormMaterialsSuppliers.Designer.vb">
+      <DependentUpon>FormMaterialsSuppliers.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FormMaterialsSuppliers.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FormAddManufacturerSeries.Designer.vb">
       <DependentUpon>FormAddManufacturerSeries.vb</DependentUpon>
     </Compile>
-    <Compile Include="FormAddManufacturerSeries.vb">
+    <Compile Include="Forms\FormAddManufacturerSeries.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\formAddModels.Designer.vb">
@@ -187,7 +193,10 @@
     <Compile Include="TESTMODULE.vb" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="FormAddManufacturerSeries.resx">
+    <EmbeddedResource Include="Forms\FormMaterialsSuppliers.resx">
+      <DependentUpon>FormMaterialsSuppliers.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FormAddManufacturerSeries.resx">
       <DependentUpon>FormAddManufacturerSeries.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\formAddModels.resx">
@@ -210,6 +219,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include=".github\copilot-instructions.md" />
     <None Include="App.config" />
     <None Include="Forms\formListings.vb, lines 120–140" />
     <None Include="Forms\formListings.vb, lines 210-225" />
@@ -223,6 +233,9 @@
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".github\UpdateEquipmentType.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

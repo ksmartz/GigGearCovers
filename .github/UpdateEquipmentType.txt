@@ -1,4 +1,37 @@
-﻿' Purpose: Allow user to select Manufacturer and Series, then add/edit multiple Model records in a DataGridView with ComboBox columns for lookup fields.
+Currently my code ties the equipment type to a specific series. Here is model series table: PK_seriesId	int	Unchecked
+FK_manufacturerId	int	Unchecked
+seriesName	nvarchar(200)	Unchecked
+FK_equipmentTypeId	int	Checked
+		Unchecked However I need to change that logic and tie the equipment type to specific models instead. Here is that table: PK_modelId	int	Unchecked
+FK_seriesId	int	Unchecked
+modelName	nvarchar(200)	Unchecked
+width	decimal(9, 2)	Unchecked
+depth	decimal(9, 2)	Unchecked
+height	decimal(9, 2)	Unchecked
+optionalHeight	decimal(10, 2)	Checked
+optionalDepth	decimal(10, 2)	Checked
+angleType	nvarchar(50)	Checked
+tahWidth	decimal(10, 2)	Checked
+tahHeight	decimal(10, 2)	Checked
+sahHeight	decimal(10, 2)	Checked
+sahWidth	decimal(10, 2)	Checked
+ampHandleLocation	nvarchar(50)	Checked
+tahRearOffset	decimal(10, 2)	Checked
+sahRearOffset	decimal(10, 2)	Checked
+sahTopDownOffset	decimal(10, 2)	Checked
+musicRestDesign	bit	Checked
+chart_Template	bit	Checked
+notes	nvarchar(MAX)	Checked
+FK_angleTypeId	int	Checked
+FK_ampHandleLocationId	int	Checked
+totalFabricSquareInches	decimal(18, 2)	Unchecked
+parentSku	nchar(32)	Checked
+WooProductId	int	Checked
+onReverb	bit	Checked
+lastUpdated	date	Checked
+		Unchecked
+
+Here is code for formAddModels, can you provide me the code to update this correctly? ' Purpose: Allow user to select Manufacturer and Series, then add/edit multiple Model records in a DataGridView with ComboBox columns for lookup fields.
 ' Dependencies: Imports System.Data.SqlClient, System.Windows.Forms, DbConnectionManager
 ' Current date: 2025-09-30
 

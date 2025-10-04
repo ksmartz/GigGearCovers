@@ -17,6 +17,7 @@ Imports System.Linq
 Public Class formListings
     Private isLoading As Boolean = False
     Private checkedListMarketplaces As CheckedListBox
+
     Private Sub formListings_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         isLoading = True
         Try
@@ -35,6 +36,8 @@ Public Class formListings
             isLoading = False
         End Try
     End Sub
+
+
     Public Sub New()
         ' This call is required by the designer.
         InitializeComponent()
@@ -266,10 +269,9 @@ Public Class formListings
         Return selectedIds
         ' <<< end changed
     End Function
-    ' Purpose: Loads series for the selected manufacturer into cmbSeries.
+    ' Purpose: Loads series for the selected manufacturer into cmbSeriesName, including equipment type ID for downstream use.
     ' Dependencies: Imports System.Data.SqlClient, System.Windows.Forms, DbConnectionManager
-    ' Current date: 2025-09-30
-
+    ' Current date: 2025-10-02
     Private Sub cmbManufacturerName_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbManufacturerName.SelectedIndexChanged
         ' >>> changed
         If cmbManufacturerName.SelectedIndex = -1 Then
@@ -277,11 +279,18 @@ Public Class formListings
             Return
         End If
 
-        Dim manufacturerId As Integer = Convert.ToInt32(CType(cmbManufacturerName.SelectedItem, DataRowView)("PK_manufacturerId"))
+        ' Use SelectedValue for the manufacturer ID, with type safety
+        Dim manufacturerId As Integer
+        If cmbManufacturerName.SelectedValue Is Nothing OrElse Not Integer.TryParse(cmbManufacturerName.SelectedValue.ToString(), manufacturerId) Then
+            cmbSeriesName.DataSource = Nothing
+            Return
+        End If
+
         Try
             Using conn = DbConnectionManager.CreateOpenConnection()
                 Dim dt As New DataTable()
-                Using cmd As New SqlCommand("SELECT PK_seriesId, seriesName FROM ModelSeries WHERE FK_manufacturerId = @manuId ORDER BY seriesName", conn)
+                ' Include FK_equipmentTypeId in the SELECT so it is available in the DataRowView
+                Using cmd As New SqlCommand("SELECT PK_seriesId, seriesName, FK_equipmentTypeId FROM ModelSeries WHERE FK_manufacturerId = @manuId ORDER BY seriesName", conn) ' <<< changed
                     cmd.Parameters.AddWithValue("@manuId", manufacturerId)
                     dt.Load(cmd.ExecuteReader())
                 End Using

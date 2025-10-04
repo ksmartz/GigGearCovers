@@ -24,6 +24,7 @@ Partial Class formDashboard
     Private Sub InitializeComponent()
         Me.btnAddModels = New System.Windows.Forms.Button()
         Me.btnListings = New System.Windows.Forms.Button()
+        Me.btnMaterialsSuppliers = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'btnAddModels
@@ -44,11 +45,21 @@ Partial Class formDashboard
         Me.btnListings.Text = "Listings"
         Me.btnListings.UseVisualStyleBackColor = True
         '
+        'btnMaterialsSuppliers
+        '
+        Me.btnMaterialsSuppliers.Location = New System.Drawing.Point(118, 260)
+        Me.btnMaterialsSuppliers.Name = "btnMaterialsSuppliers"
+        Me.btnMaterialsSuppliers.Size = New System.Drawing.Size(166, 52)
+        Me.btnMaterialsSuppliers.TabIndex = 2
+        Me.btnMaterialsSuppliers.Text = "Materials/Suppliers"
+        Me.btnMaterialsSuppliers.UseVisualStyleBackColor = True
+        '
         'formDashboard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(9.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(800, 450)
+        Me.Controls.Add(Me.btnMaterialsSuppliers)
         Me.Controls.Add(Me.btnListings)
         Me.Controls.Add(Me.btnAddModels)
         Me.Name = "formDashboard"
@@ -59,4 +70,5 @@ Partial Class formDashboard
 
     Friend WithEvents btnAddModels As Windows.Forms.Button
     Friend WithEvents btnListings As Windows.Forms.Button
+    Friend WithEvents btnMaterialsSuppliers As Windows.Forms.Button
 End Class
